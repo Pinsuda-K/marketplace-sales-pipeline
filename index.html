@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Marketplace Sales &amp; GMV Reporting Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<script src="./assets/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#EEF2F4; --surface:#FFFFFF; --ink:#102A33; --muted:#5B7280;
+    --line:#DCE4E8; --teal:#0E7C86; --teal-soft:#9AD3D8; --amber:#E0913A;
+    --green:#2E9E6B; --red:#D2603A;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1120px; margin:0 auto; padding:32px 22px 56px;}
+  header{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:6px;}
+  h1{font-size:26px; font-weight:700; letter-spacing:-.4px; margin:0;}
+  .sub{color:var(--muted); font-size:14px; margin-top:4px;}
+  .pill{font-size:11px; font-weight:600; letter-spacing:.4px; text-transform:uppercase;
+    color:var(--amber); border:1px solid var(--amber); border-radius:999px; padding:4px 10px; white-space:nowrap;}
+  .rule{height:1px; background:var(--line); margin:18px 0 24px;}
+  .cards{display:grid; grid-template-columns:repeat(6,1fr); gap:12px;}
+  @media(max-width:880px){.cards{grid-template-columns:repeat(3,1fr);}}
+  @media(max-width:520px){.cards{grid-template-columns:repeat(2,1fr);}}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 15px;}
+  .card .label{font-size:11px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:600;}
+  .card .value{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:21px; margin-top:7px; letter-spacing:-.5px;}
+  .card .value small{font-size:12px; color:var(--muted); font-weight:500;}
+  .grid{display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-top:16px;}
+  .grid.two{grid-template-columns:1fr 1fr;}
+  @media(max-width:820px){.grid,.grid.two{grid-template-columns:1fr;}}
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px;}
+  .panel h2{font-size:14px; font-weight:600; margin:0 0 2px;}
+  .panel .note{font-size:12px; color:var(--muted); margin:0 0 12px;}
+  .chartbox{position:relative; height:240px;}
+  footer{margin-top:26px; font-size:12px; color:var(--muted);}
+  footer a{color:var(--teal); text-decoration:none;}
+  .err{background:#FEF3F0; border:1px solid var(--red); color:var(--red); padding:12px 14px; border-radius:10px; font-size:13px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Marketplace Sales &amp; GMV Reporting</h1>
+      <div class="sub">Executive sales, margin &amp; funnel view &middot; a formula-first reporting back-end (mock data, May&ndash;Jun 2025)</div>
+    </div>
+    <span class="pill">Mock data</span>
+  </header>
+  <div class="rule"></div>
+
+  <div id="cards" class="cards"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Monthly trend</h2>
+      <p class="note">Gross GMV vs Net Revenue (returns netted) by month</p>
+      <div class="chartbox"><canvas id="trend"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Conversion funnel</h2>
+      <p class="note">Visitors &rarr; Views &rarr; Add to Cart &rarr; Paid</p>
+      <div class="chartbox"><canvas id="funnel"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid two">
+    <div class="panel">
+      <h2>Product performance</h2>
+      <p class="note">Gross GMV by product (label = gross margin %)</p>
+      <div class="chartbox"><canvas id="product"></canvas></div>
+    </div>
+    <div class="panel">
+      <h2>Promotion effect</h2>
+      <p class="note">Average order value by campaign vs no promotion</p>
+      <div class="chartbox"><canvas id="promo"></canvas></div>
+    </div>
+  </div>
+
+  <footer id="foot">
+    Mock data for demonstration. Numbers are produced by <code>src/pipeline.py</code> and read live from the <code>output/</code> layer.
+  </footer>
+</div>
+
+<script>
+const T={ink:'#102A33',teal:'#0E7C86',tealSoft:'#9AD3D8',amber:'#E0913A',green:'#2E9E6B',red:'#D2603A',muted:'#5B7280',line:'#DCE4E8'};
+const baht=n=>'\u0E3F'+Number(n).toLocaleString();
+const num=n=>Number(n).toLocaleString();
+
+function parseCSV(text){
+  const [head,...rows]=text.trim().split(/\r?\n/);
+  const cols=head.split(',');
+  return rows.map(r=>{const v=r.split(','); const o={}; cols.forEach((c,i)=>o[c]=v[i]); return o;});
+}
+async function load(name){const r=await fetch('./output/'+name); if(!r.ok) throw new Error(name); return parseCSV(await r.text());}
+
+Chart.defaults.font.family="'Inter',sans-serif";
+Chart.defaults.color=T.muted;
+Chart.defaults.plugins.legend.labels.boxWidth=12;
+Chart.defaults.plugins.legend.labels.font={size:11};
+
+(async function(){
+ try{
+  const [kpi,monthly,product,promo,funnel]=await Promise.all(
+    ['out_kpi_summary.csv','out_monthly.csv','out_product.csv','out_promotion.csv','out_funnel.csv'].map(load));
+  const k=kpi[0];
+
+  const cards=[
+    ['Gross GMV', baht(k.gross_gmv)],
+    ['Net Revenue', baht(k.net_revenue)],
+    ['Gross Profit', baht(k.gross_profit)],
+    ['Margin', k.margin_pct+'<small>%</small>'],
+    ['Orders', num(k.orders)],
+    ['Avg Order Value', baht(k.aov)],
+  ];
+  document.getElementById('cards').innerHTML=cards.map(c=>
+    `<div class="card"><div class="label">${c[0]}</div><div class="value">${c[1]}</div></div>`).join('');
+
+  new Chart(document.getElementById('trend'),{type:'line',
+    data:{labels:monthly.map(m=>m.year_month),
+      datasets:[
+        {label:'Gross GMV',data:monthly.map(m=>+m.gross_gmv),borderColor:T.teal,backgroundColor:T.teal,tension:.3,fill:false,pointRadius:4},
+        {label:'Net Revenue',data:monthly.map(m=>+m.net_revenue),borderColor:T.amber,backgroundColor:T.amber,tension:.3,fill:false,pointRadius:4,borderDash:[5,4]}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true,grid:{color:T.line},ticks:{callback:v=>'\u0E3F'+(v/1000)+'k'}},x:{grid:{display:false}}}}});
+
+  const fl=funnel.map(f=>+f.count);
+  new Chart(document.getElementById('funnel'),{type:'bar',
+    data:{labels:funnel.map(f=>f.stage),
+      datasets:[{data:fl,backgroundColor:[T.tealSoft,T.teal,'#0A5C64',T.ink],borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:T.line},ticks:{callback:v=>num(v)}},y:{grid:{display:false}}}}});
+
+  new Chart(document.getElementById('product'),{type:'bar',
+    data:{labels:product.map(p=>p.itemName),
+      datasets:[{data:product.map(p=>+p.gross_gmv),backgroundColor:T.teal,borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{afterLabel:c=>'Margin '+product[c.dataIndex].margin_pct+'%'}},
+        datalabels:false},
+      scales:{x:{grid:{color:T.line},ticks:{callback:v=>'\u0E3F'+(v/1000)+'k'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}});
+
+  const order=['No Promotion','Mid-Year Bath Sale','Payday Flash'];
+  promo.sort((a,b)=>order.indexOf(a.campaign)-order.indexOf(b.campaign));
+  new Chart(document.getElementById('promo'),{type:'bar',
+    data:{labels:promo.map(p=>p.campaign),
+      datasets:[{label:'Avg Order Value',data:promo.map(p=>+p.aov),
+        backgroundColor:promo.map(p=>p.is_promo==='1'?T.amber:T.muted),borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{beginAtZero:true,grid:{color:T.line},ticks:{callback:v=>'\u0E3F'+(v/1000)+'k'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}});
+ }catch(e){
+  document.getElementById('cards').outerHTML='<div class="err">Could not load <code>output/'+e.message+'</code>. Run <code>python src/pipeline.py</code> first, then serve the folder over http (e.g. <code>python -m http.server</code>).</div>';
+ }
+})();
+</script>
+</body>
+</html>

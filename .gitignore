@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+_shot.html
+node_modules/
+.ipynb_checkpoints/

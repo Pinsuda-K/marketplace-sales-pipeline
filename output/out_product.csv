@@ -1,0 +1,7 @@
+sellerSku,itemName,category,units,gross_gmv,gross_profit,margin_pct
+SKU-C,Smart Bidet Seat,Smart Sanitary,3,9600,3300,34.4
+SKU-E,Rainfall Shower Set,Showers,2,9000,3400,37.8
+SKU-F,Dual-Flush Toilet,Toilets,2,7600,2800,36.8
+SKU-A,Single-Lever Basin Faucet,Faucets,4,6000,2400,40.0
+SKU-D,Ceramic Wash Basin,Basins,2,4000,1600,40.0
+SKU-B,Shower Drain Cover,Drainage,6,3000,1500,50.0
