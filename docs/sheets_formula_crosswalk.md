@@ -39,7 +39,7 @@ workbook and (b) the pandas equivalent in [`src/pipeline.py`](../src/pipeline.py
 **Raw stays platform-native; flags are derived in `clean_`.** The order export
 carries only what the marketplace actually returns (`status`, prices, quantity).
 The reporting flags (`is_canceled`, `is_counted`, `is_sale`) are computed in the
-clean layer, and `is_excluded` comes from a **separate internal list** &mdash; so
+clean layer, and `is_excluded` comes from a **separate internal list**, so
 platform truth and internal business decisions never get mixed in the raw data.
 
 **Join and count at item grain (`orderItemId`).** A single order can hold several
