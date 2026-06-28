@@ -1,6 +1,6 @@
 # Sheets &harr; pandas formula crosswalk
 
-The production back-end is a **formula-first Google Sheets system** &mdash; no
+The production back-end is a **formula-first Google Sheets system** , no
 black-box scripts for the metrics. Every reporting number traces back through
 strict linear references to the raw exports, which are never edited by hand.
 This file maps each metric to (a) the Google Sheets formula used in the real
@@ -49,7 +49,7 @@ the grain; order-level figures are recovered with a *distinct* count instead.
 **Net Revenue via a signed sum.** A return is a separate negative reversal row
 sharing the order number (`ITEM-0005` `+2000`, `ITEM-0005R` `-2000`). Net Revenue
 sums all counted rows including the negative, so the sale and its reversal cancel
-to zero automatically &mdash; nothing to maintain by hand.
+to zero automatically, nothing to maintain by hand.
 
 **Promotion aggregated at order grain.** `discountAmount` is order-level; summing
 it across item rows would multiply it. The promotion table dedupes to one row per
