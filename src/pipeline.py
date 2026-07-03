@@ -1,14 +1,13 @@
 """
-Marketplace Sales & GMV Reporting Pipeline - reference implementation.
+(REF) Marketplace Sales & GMV Reporting Pipeline
 
-A faithful, runnable port of a formula-first Google Sheets reporting back-end:
-
+Runnable port of a formula-first Google Sheets reporting back-end:
     raw_ (4 marketplace exports + 1 internal list)
-        -> clean_   (typed, dated, business rules applied)
-        -> master_  (single analysis-ready table, all sources joined)
-        -> out_     (dashboard-ready aggregates)
+        >> clean_   (typed, dated, business rules applied)
+        >> master_  (single analysis-ready table, all sources joined)
+        >> out_     (dashboard-ready aggregates)
 
-The production system lives in Google Sheets (ARRAYFORMULA / COUNTUNIQUEIFS /
+Production system lives in Google Sheets (ARRAYFORMULA / COUNTUNIQUEIFS /
 SUMIF / SUMIFS) feeding a dashboard. Every reporting number traces back through
 linear references to the raw exports, which are never edited by hand. This
 script reproduces the exact metric logic on mock data so it is reproducible and
@@ -26,11 +25,7 @@ OUT = ROOT / "output"
 OUT.mkdir(exist_ok=True)
 
 
-# ======================================================================
-# RAW - five inputs. Four mirror marketplace seller-center exports; the
-# exclusion list is an internal business rule kept OUT of the raw exports
-# on purpose (platform truth vs. internal decisions stay separate).
-# ======================================================================
+# RAW (five inputs) Four mirror marketplace seller-center exports; the exclusion list is an internal business rule kept OUT of the raw exports on purpose (platform truth vs. internal decisions stay separate)
 def load_raw():
     return (
         pd.read_csv(DATA / "raw_order_transaction.csv"),
@@ -41,11 +36,8 @@ def load_raw():
     )
 
 
-# ======================================================================
-# CLEAN - type/date the order export and derive the reporting flags once.
-# Order grain is one row per item; a return adds a negative "refund" row
-# sharing the orderNumber. Flags are DERIVED here (raw stays platform-native).
-# ======================================================================
+# CLEAN >>> type/date the order export and derive the reporting flags once
+# Order grain is one row per item; a return adds a negative "refund" row sharing the orderNumber. Flags DERIVED here (raw stays platform-native)
 def clean_orders(orders, exclusions):
     df = orders.copy()
     df["createTime"] = pd.to_datetime(df["createTime"])
@@ -58,15 +50,13 @@ def clean_orders(orders, exclusions):
     df["is_counted"] = ((df["is_canceled"] == 0) & (df["is_excluded"] == 0)).astype(int)
 
     # line GMV = sellingPrice * quantity. quantity is negative on refund rows,
-    # so the line GMV is automatically negative and nets the original sale.
+    # so the line GMV is automatically negative and nets the original sale
     df["line_gmv"] = df["sellingPrice"] * df["quantity"]
     return df
 
 
-# ======================================================================
-# MASTER - one analysis-ready table. Join catalog on sellerSku (item grain)
-# for category/brand/cost, then attach order-level promotion context.
-# ======================================================================
+# MASTER >>> one analysis-ready table. Join catalog on sellerSku (item granular)
+# for category/brand/cost, then attach order-level promotion context
 def build_master(clean, catalog, vouchers):
     cat = catalog[["sellerSku", "category", "brand", "costPrice"]]
     m = clean.merge(cat, on="sellerSku", how="left")             # item-grain join
@@ -84,9 +74,7 @@ def build_master(clean, catalog, vouchers):
     return m
 
 
-# ======================================================================
-# OUT - dashboard-ready aggregates (the dashboard scorecards read these).
-# ======================================================================
+# OUT = dashboard-ready aggregates (the dashboard scorecards read these)
 def build_out(master, traffic):
     counted = master[master["is_counted"] == 1]
     sales = counted[counted["is_sale"] == 1]
