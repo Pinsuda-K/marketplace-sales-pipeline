@@ -1,57 +1,60 @@
 """
 Marketplace Sales & GMV Reporting Pipeline
 ==========================================
-Layered, formula-first data pipeline for a specialty coffee equipment storefront.
+Runnable port of a formula-first Google Sheets reporting back-end.
 
-Layers
-------
-raw_    → exports as they came from the marketplace / own-store systems (untouched)
-clean_  → typed, deduped, flag-derived (canceled / excluded / return-reversal / sale)
-master_ → analysis-ready join (orders ⋈ catalog ⋈ channel ⋈ vouchers)
-out_    → business marts: channel_perf, product_econ, funnel_retention
+    raw_     (marketplace exports + one internal list)
+        →   clean_    typed, dated, business rules applied, quality-flagged
+        →   master_   single analysis-ready table, all sources joined
+        →   out_      dashboard-ready aggregates
 
-Why layered
------------
-- Raw is never mutated by hand → any downstream number is reproducible from source.
-- Cleaning rules live in ONE place → easy to audit and change.
-- Business logic lives in the master + out layers → not tangled with cleanup.
+The production pattern lives in Google Sheets (ARRAYFORMULA / SUMIFS /
+COUNTUNIQUEIFS / VLOOKUP), where every reporting number traces back through
+strict linear references to the raw exports — which are never edited by hand.
 
-Data quality issues this pipeline is designed to handle
--------------------------------------------------------
-See docs/data_quality_notes.md for the full inventory. Summary:
-  1. Multi-item orders (order_id repeats across line items)
-  2. Cancellations (row present but must not count as revenue)
-  3. Returns with signed-negative reversal rows
-  4. Internal QA / staff orders (via exclusion_list.csv)
-  5. Exact-duplicate rows (export bug)
-  6. Mixed date formats (ISO / DD-MM-YYYY / trailing whitespace)
-  7. Currency strings with "฿" prefix and thousand-separators
-  8. Blank SKU rows
-  9. Orders referencing SKUs that don't exist in the catalog
- 10. Voucher redemptions attached to canceled orders
+This script reproduces the exact metric logic in pandas so it is reproducible
+and auditable from code. Every Sheets formula it mirrors is documented in
+docs/sheets_formula_crosswalk.md.
 
-The pipeline reports counts for each caught issue in the summary.
+Run:  python src/pipeline.py
 """
 
 from __future__ import annotations
-
 import json
 import re
-from datetime import datetime
 from pathlib import Path
-
 import pandas as pd
 
-# ------------------------- paths -------------------------
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
 OUT = ROOT / "output"
-OUT.mkdir(parents=True, exist_ok=True)
+OUT.mkdir(exist_ok=True)
 
 
-# ------------------------- helpers -----------------------
+# ============================================================
+# RAW  — five inputs. Four mirror marketplace seller-center exports;
+# the exclusion_list is an internal business rule kept OUT of the raw
+# exports on purpose (platform truth vs. internal decisions stay separate).
+# ============================================================
+def load_raw():
+    return (
+        pd.read_csv(DATA / "raw_order_transaction.csv"),
+        pd.read_csv(DATA / "raw_product_catalog.csv"),
+        pd.read_csv(DATA / "raw_voucher_usage.csv"),
+        pd.read_csv(DATA / "raw_traffic_funnel.csv"),
+        pd.read_csv(DATA / "raw_channel_master.csv"),
+        pd.read_csv(DATA / "exclusion_list.csv"),
+    )
+
+
+# ============================================================
+# Parsing helpers — one place for every field-level interpretation
+# ============================================================
+_DDMMYYYY = re.compile(r"^\s*(\d{2})/(\d{2})/(\d{4})\s+(\d{2}):(\d{2})")
+
+
 def _parse_price(x) -> float:
-    """Handle '฿20,456' / '฿6,900' / '2345' / 2345 / '  ฿1,200 ' all as float."""
+    """Handle '฿20,456' / '฿6,900' / '2345' / 2345 as float."""
     if pd.isna(x):
         return 0.0
     s = str(x).strip().replace("฿", "").replace(",", "").strip()
@@ -63,11 +66,8 @@ def _parse_price(x) -> float:
         return 0.0
 
 
-_DDMMYYYY = re.compile(r"^\s*(\d{2})/(\d{2})/(\d{4})\s+(\d{2}):(\d{2})")
-
-
-def _parse_date(x) -> pd.Timestamp:
-    """Handle '2025-05-01 10:37:00' and '01/05/2025 10:13  ' (with trailing whitespace)."""
+def _parse_date(x):
+    """Handle mixed ISO and DD/MM/YYYY formats with trailing whitespace."""
     if pd.isna(x):
         return pd.NaT
     s = str(x).strip()
@@ -84,213 +84,195 @@ def _parse_date(x) -> pd.Timestamp:
         return pd.NaT
 
 
-# ------------------------- clean layer -----------------------
-def build_clean(diag: dict) -> dict[str, pd.DataFrame]:
-    """
-    Read raw_ files, type them, dedupe, and derive reporting flags.
-    Returns a dict of clean_ frames.
-    """
-    raw_orders = pd.read_csv(DATA / "raw_order_transaction.csv")
-    raw_catalog = pd.read_csv(DATA / "raw_product_catalog.csv")
-    raw_channels = pd.read_csv(DATA / "raw_channel_master.csv")
-    raw_vouchers = pd.read_csv(DATA / "raw_voucher_usage.csv")
-    raw_traffic = pd.read_csv(DATA / "raw_traffic_funnel.csv")
-    exclusions = pd.read_csv(DATA / "exclusion_list.csv")
+# ============================================================
+# CLEAN  — type the order export, dedupe, derive reporting flags once.
+# Order grain is one row per item; a return adds a negative-quantity
+# "reversal" row sharing the order_id.
+# ============================================================
+def clean_orders(orders, catalog, exclusions, diag):
+    df = orders.copy()
+    diag["raw_order_rows"] = len(df)
 
-    diag["raw_order_rows"] = len(raw_orders)
+    # Exact-duplicate rows (export bug) — dedupe by order_item_id
+    before = len(df)
+    df = df.drop_duplicates(subset=["order_item_id"], keep="first")
+    diag["duplicates_dropped"] = before - len(df)
 
-    # ---- orders: dedup exact duplicates ----
-    before = len(raw_orders)
-    raw_orders = raw_orders.drop_duplicates(subset=["order_item_id"], keep="first")
-    diag["duplicates_dropped"] = before - len(raw_orders)
+    # Types
+    df["unit_price_num"] = df["unit_price"].apply(_parse_price)
+    df["created_ts"] = df["created_at"].apply(_parse_date)
+    df["date"] = df["created_ts"].dt.date
+    df["year_month"] = df["created_ts"].dt.strftime("%Y-%m")
+    diag["unparseable_dates"] = int(df["created_ts"].isna().sum())
 
-    # ---- orders: parse types ----
-    raw_orders["unit_price_num"] = raw_orders["unit_price"].apply(_parse_price)
-    raw_orders["created_ts"] = raw_orders["created_at"].apply(_parse_date)
-    raw_orders["date"] = raw_orders["created_ts"].dt.date
-    diag["unparseable_dates"] = int(raw_orders["created_ts"].isna().sum())
+    # Business-rule flags (derived once, filtered downstream)
+    excluded_customers = set(exclusions["customer_id"])
+    catalog_skus = set(catalog["sku"])
 
-    # ---- orders: flag rows we won't count ----
-    # Blank SKU rows
-    raw_orders["is_blank_sku"] = raw_orders["sku"].fillna("").str.strip().eq("")
-    diag["blank_sku_rows"] = int(raw_orders["is_blank_sku"].sum())
+    df["is_blank_sku"] = df["sku"].fillna("").str.strip().eq("")
+    df["is_ghost_sku"] = (~df["sku"].isin(catalog_skus)) & (~df["is_blank_sku"])
+    zero_priced = (df["unit_price_num"] == 0) & (df["quantity"] > 0)
+    df["is_excluded"] = df["customer_id"].isin(excluded_customers) | zero_priced
 
-    # SKUs not in catalog (broken join)
-    catalog_skus = set(raw_catalog["sku"])
-    raw_orders["is_ghost_sku"] = ~raw_orders["sku"].isin(catalog_skus) & ~raw_orders["is_blank_sku"]
-    diag["ghost_sku_rows"] = int(raw_orders["is_ghost_sku"].sum())
-
-    # Internal / excluded customers
-    excluded_ids = set(exclusions["customer_id"])
-    raw_orders["is_excluded"] = raw_orders["customer_id"].isin(excluded_ids)
-
-    # Zero-price rows are also QA signals (belt-and-braces with the exclusion list)
-    zero_priced = (raw_orders["unit_price_num"] == 0) & (raw_orders["quantity"] > 0)
-    raw_orders["is_excluded"] = raw_orders["is_excluded"] | zero_priced
-    diag["excluded_customer_rows"] = int(raw_orders["is_excluded"].sum())
-
-    # Cancellation and return flags — driven by status
-    raw_orders["is_canceled"] = raw_orders["status"].eq("canceled")
-    raw_orders["is_reversal"] = raw_orders["status"].eq("reversal")
-    raw_orders["is_returned_order"] = raw_orders["status"].eq("returned")
-
-    # A row "counts as a sale" iff:
-    #   - status is delivered OR returned (returned still generated revenue then netted)
-    #   - not canceled, not internal QA, not blank/ghost SKU
-    # Reversal rows have negative qty and count as sales too (they NET the return)
-    raw_orders["is_countable"] = (
-        raw_orders["status"].isin(["delivered", "returned", "reversal"])
-        & ~raw_orders["is_excluded"]
-        & ~raw_orders["is_blank_sku"]
-        & ~raw_orders["is_ghost_sku"]
+    df["is_canceled"] = df["status"].eq("canceled")
+    df["is_reversal"] = df["status"].eq("reversal")           # exclude reversal from "sale" count
+    df["is_sale"] = ~df["is_reversal"]                        # sale-line flag (exclude refund rows)
+    df["is_counted"] = (
+        ~df["is_canceled"] & ~df["is_excluded"]
+        & ~df["is_blank_sku"] & ~df["is_ghost_sku"]
     )
 
-    # Line-level financials
-    raw_orders["line_gmv"] = raw_orders["quantity"] * raw_orders["unit_price_num"]
-    raw_orders["line_cogs"] = raw_orders["quantity"] * raw_orders["cost_price"]
-    raw_orders["line_gross_profit"] = raw_orders["line_gmv"] - raw_orders["line_cogs"]
+    # Line-level financials — quantity is negative on reversal rows so
+    # line_gmv is automatically negative and nets the original sale.
+    df["line_gmv"] = df["unit_price_num"] * df["quantity"]
+    df["line_cogs"] = df["cost_price"] * df["quantity"]
 
-    clean_orders = raw_orders
-
-    # ---- vouchers: keep, but flag ones that point at now-canceled orders ----
-    canceled_ids = set(clean_orders.loc[clean_orders["is_canceled"], "order_id"])
-    raw_vouchers["orphan_voucher"] = raw_vouchers["order_id"].isin(canceled_ids)
-    diag["orphan_vouchers"] = int(raw_vouchers["orphan_voucher"].sum())
-
-    # ---- traffic + catalog + channels are already typed; keep as-is ----
-    return {
-        "clean_orders": clean_orders,
-        "clean_catalog": raw_catalog,
-        "clean_channels": raw_channels,
-        "clean_vouchers": raw_vouchers,
-        "clean_traffic": raw_traffic,
-    }
+    diag["blank_sku_rows"] = int(df["is_blank_sku"].sum())
+    diag["ghost_sku_rows"] = int(df["is_ghost_sku"].sum())
+    diag["excluded_rows"] = int(df["is_excluded"].sum())
+    diag["canceled_rows"] = int(df["is_canceled"].sum())
+    diag["reversal_rows"] = int(df["is_reversal"].sum())
+    return df
 
 
-# ------------------------- master layer ---------------------
-def build_master(clean: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """Join orders ⋈ catalog ⋈ channels ⋈ vouchers into one analysis-ready table."""
-    o = clean["clean_orders"]
-    cat = clean["clean_catalog"][["sku", "category", "brand", "list_price"]]
-    ch = clean["clean_channels"][["channel_id", "channel_name", "commission_rate", "is_own_store"]]
-    v = clean["clean_vouchers"].loc[~clean["clean_vouchers"]["orphan_voucher"], ["order_id", "voucher_id"]]
+def clean_vouchers(vouchers, orders_clean, diag):
+    """Flag voucher redemptions that point at a now-canceled order."""
+    v = vouchers.copy()
+    canceled_ids = set(orders_clean.loc[orders_clean["is_canceled"], "order_id"])
+    v["orphan_voucher"] = v["order_id"].isin(canceled_ids)
+    diag["orphan_vouchers"] = int(v["orphan_voucher"].sum())
+    return v
 
-    m = o.merge(cat, on="sku", how="left")
-    m = m.merge(ch, on="channel_id", how="left")
-    v_dedup = v.drop_duplicates(subset=["order_id"], keep="first")
-    m = m.merge(v_dedup, on="order_id", how="left")
 
-    # Channel margin logic — commission is charged on GMV for marketplaces
+# ============================================================
+# MASTER  — one analysis-ready table. Join catalog on sku, channel on
+# channel_id, and attach voucher on order_id (excluding orphans).
+# ============================================================
+def build_master(clean_orders, catalog, channels, vouchers_clean):
+    m = clean_orders.merge(
+        catalog[["sku", "category", "brand", "list_price"]], on="sku", how="left"
+    )
+    m = m.merge(
+        channels[["channel_id", "channel_name", "commission_rate", "is_own_store"]],
+        on="channel_id", how="left",
+    )
+    v = vouchers_clean.loc[~vouchers_clean["orphan_voucher"], ["order_id", "voucher_id"]]
+    m = m.merge(v.drop_duplicates(subset=["order_id"]), on="order_id", how="left")
+
     m["is_own_store_bool"] = m["is_own_store"].astype(str).str.upper().eq("TRUE")
     m["line_commission"] = m["line_gmv"] * m["commission_rate"].fillna(0)
     m["line_net_revenue"] = m["line_gmv"] - m["line_commission"]
+    m["line_gross_profit"] = m["line_gmv"] - m["line_cogs"]
     m["line_contribution_margin"] = m["line_net_revenue"] - m["line_cogs"]
-
     return m
 
 
-# ------------------------- out layer ------------------------
-def build_out(master: pd.DataFrame, clean: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
-    """Build the three business marts."""
-    cnt = master.loc[master["is_countable"]].copy()
+# ============================================================
+# OUT  — dashboard-ready aggregates. Mirror the SUMIFS / COUNTUNIQUEIFS
+# shape of the Sheets back-end. See docs/sheets_formula_crosswalk.md.
+# ============================================================
+def build_out(master, traffic, channels):
+    counted = master.loc[master["is_counted"]].copy()
+    sales = counted.loc[counted["is_sale"]].copy()
 
-    # ---------- Mart 1: Channel Performance ----------
-    channel_perf = cnt.groupby(
-        ["channel_id", "channel_name", "is_own_store_bool"], as_index=False
-    ).agg(
-        gmv=("line_gmv", "sum"),
-        net_revenue=("line_net_revenue", "sum"),
-        commission_paid=("line_commission", "sum"),
-        cogs=("line_cogs", "sum"),
-        contribution_margin=("line_contribution_margin", "sum"),
-        units_sold=("quantity", "sum"),
-        orders=("order_id", "nunique"),
-    )
-    channel_perf["margin_pct"] = (
-        channel_perf["contribution_margin"] / channel_perf["gmv"].replace(0, pd.NA)
-    ).fillna(0) * 100
-    channel_perf["aov"] = (
-        channel_perf["gmv"] / channel_perf["orders"].replace(0, pd.NA)
-    ).fillna(0)
+    # ---- kpi_summary  (SUMIFS on counted × sale; COUNTUNIQUEIFS on counted) ----
+    gross_gmv = float(sales["line_gmv"].sum())
+    net_revenue = float(counted["line_net_revenue"].sum())  # includes commissions AND reversals
+    gross_profit = float(counted["line_gross_profit"].sum())
+    contribution_margin = float(counted["line_contribution_margin"].sum())
+    commission_paid = float(counted["line_commission"].sum())
+    orders = int(counted["order_id"].nunique())
+    units = int(sales["quantity"].sum())
+    aov = round(gross_gmv / orders, 2) if orders else 0.0
+    margin_pct = round(100 * contribution_margin / gross_gmv, 1) if gross_gmv else 0.0
 
-    # ---------- Mart 2: Product Economics ----------
-    prod_econ = cnt.groupby(
-        ["sku", "item_name", "category", "brand"], as_index=False
-    ).agg(
-        gmv=("line_gmv", "sum"),
-        net_revenue=("line_net_revenue", "sum"),
-        commission_paid=("line_commission", "sum"),
-        cogs=("line_cogs", "sum"),
-        contribution_margin=("line_contribution_margin", "sum"),
-        units_sold=("quantity", "sum"),
-    )
-    prod_econ["margin_pct"] = (
-        prod_econ["contribution_margin"] / prod_econ["gmv"].replace(0, pd.NA)
-    ).fillna(0) * 100
-    prod_econ = prod_econ.sort_values("net_revenue", ascending=False).reset_index(drop=True)
+    kpi = pd.DataFrame([{
+        "period_start": str(counted["date"].min()),
+        "period_end":   str(counted["date"].max()),
+        "gross_gmv": gross_gmv,
+        "commission_paid": commission_paid,
+        "net_revenue": net_revenue,
+        "gross_profit": gross_profit,
+        "contribution_margin": contribution_margin,
+        "margin_pct": margin_pct,
+        "orders": orders,
+        "unique_customers": int(counted["customer_id"].nunique()),
+        "units_sold": units,
+        "aov": aov,
+    }])
 
-    # ---------- Mart 3: Funnel + Retention ----------
-    traffic = clean["clean_traffic"].copy()
-    traffic["date"] = pd.to_datetime(traffic["date"]).dt.date
+    # ---- monthly trend ----
+    monthly = (sales.groupby("year_month")
+               .agg(gross_gmv=("line_gmv", "sum"),
+                    units=("quantity", "sum"))
+               .reset_index())
+    net_m = (counted.groupby("year_month")["line_net_revenue"].sum()
+             .rename("net_revenue").reset_index())
+    margin_m = (counted.groupby("year_month")["line_contribution_margin"].sum()
+                .rename("contribution_margin").reset_index())
+    ord_m = (counted.groupby("year_month")["order_id"].nunique()
+             .rename("orders").reset_index())
+    monthly = (monthly.merge(net_m, on="year_month")
+                      .merge(margin_m, on="year_month")
+                      .merge(ord_m, on="year_month"))
 
-    funnel = traffic.groupby("channel_id", as_index=False).agg(
-        visitors=("visitors", "sum"),
-        views=("views", "sum"),
-        add_to_cart=("add_to_cart", "sum"),
-        paid_orders=("paid_orders", "sum"),
-    )
-    funnel = funnel.merge(
-        clean["clean_channels"][["channel_id", "channel_name"]], on="channel_id", how="left"
-    )
-    funnel["view_rate"] = (funnel["views"] / funnel["visitors"].replace(0, pd.NA)).fillna(0) * 100
-    funnel["atc_rate"] = (funnel["add_to_cart"] / funnel["views"].replace(0, pd.NA)).fillna(0) * 100
-    funnel["conv_rate"] = (funnel["paid_orders"] / funnel["visitors"].replace(0, pd.NA)).fillna(0) * 100
+    # ---- product performance ----
+    product = (sales.groupby(["sku", "item_name", "category"])
+               .agg(units=("quantity", "sum"),
+                    gross_gmv=("line_gmv", "sum"),
+                    net_revenue=("line_net_revenue", "sum"),
+                    commission=("line_commission", "sum"),
+                    contribution_margin=("line_contribution_margin", "sum"))
+               .reset_index())
+    product["margin_pct"] = (100 * product["contribution_margin"] /
+                             product["gross_gmv"].replace(0, pd.NA)).fillna(0).round(1)
+    product = product.sort_values("gross_gmv", ascending=False).reset_index(drop=True)
 
-    # Customer retention: repeat-order rate per channel
-    cust = cnt.groupby(["channel_id", "customer_id"], as_index=False)["order_id"].nunique()
-    cust.rename(columns={"order_id": "orders_per_customer"}, inplace=True)
-    retention = cust.groupby("channel_id", as_index=False).agg(
-        total_customers=("customer_id", "nunique"),
-        repeat_customers=("orders_per_customer", lambda s: int((s >= 2).sum())),
-    )
-    retention["repeat_rate_pct"] = (
-        retention["repeat_customers"] / retention["total_customers"].replace(0, pd.NA)
-    ).fillna(0) * 100
+    # ---- channel performance ----
+    channel = (counted.groupby(["channel_id", "channel_name", "is_own_store_bool"])
+               .agg(gross_gmv=("line_gmv", "sum"),
+                    commission=("line_commission", "sum"),
+                    net_revenue=("line_net_revenue", "sum"),
+                    contribution_margin=("line_contribution_margin", "sum"),
+                    orders=("order_id", "nunique"),
+                    units=("quantity", "sum"))
+               .reset_index())
+    channel["margin_pct"] = (100 * channel["contribution_margin"] /
+                             channel["gross_gmv"].replace(0, pd.NA)).fillna(0).round(1)
+    channel["aov"] = (channel["gross_gmv"] / channel["orders"].replace(0, pd.NA)).fillna(0).round(2)
 
-    funnel = funnel.merge(retention, on="channel_id", how="left")
+    # ---- promotion effect (dedupe to order grain so discount is not multiplied) ----
+    order_frame = (sales.groupby("order_id")
+                   .agg(gmv=("line_gmv", "sum"),
+                        units=("quantity", "sum"),
+                        promo_label=("promo_label", "first"))
+                   .reset_index())
+    order_frame["is_promo"] = order_frame["promo_label"].fillna("").astype(str).str.strip().ne("")
+    promotion = (order_frame.groupby("is_promo")
+                 .agg(orders=("order_id", "nunique"),
+                      gmv=("gmv", "sum"),
+                      units=("units", "sum"))
+                 .reset_index())
+    promotion["aov"] = (promotion["gmv"] / promotion["orders"]).round(2)
+    promotion["label"] = promotion["is_promo"].map({True: "Promotion", False: "No Promotion"})
+    promotion = promotion[["label", "orders", "gmv", "units", "aov"]]
 
-    # ---------- Monthly summary (used by dashboards) ----------
-    cnt["month"] = pd.to_datetime(cnt["date"]).dt.to_period("M").astype(str)
-    monthly = cnt.groupby("month", as_index=False).agg(
-        gmv=("line_gmv", "sum"),
-        net_revenue=("line_net_revenue", "sum"),
-        contribution_margin=("line_contribution_margin", "sum"),
-        orders=("order_id", "nunique"),
-    )
+    # ---- conversion funnel (traffic → view → ATC → paid) ----
+    total_paid = int(traffic["paid_orders"].sum())
+    funnel = pd.DataFrame([
+        {"stage": "Visitors",      "count": int(traffic["visitors"].sum())},
+        {"stage": "Product Views", "count": int(traffic["views"].sum())},
+        {"stage": "Add to Cart",   "count": int(traffic["add_to_cart"].sum())},
+        {"stage": "Orders (Paid)", "count": total_paid if total_paid else orders},
+    ])
 
-    # ---------- Promo impact ----------
-    cnt["is_promo"] = cnt["promo_label"].fillna("").astype(str).str.strip().ne("")
-    promo_impact = cnt.groupby("is_promo", as_index=False).agg(
-        gmv=("line_gmv", "sum"),
-        orders=("order_id", "nunique"),
-        units=("quantity", "sum"),
-    )
-    promo_impact["aov"] = (
-        promo_impact["gmv"] / promo_impact["orders"].replace(0, pd.NA)
-    ).fillna(0)
-    promo_impact["label"] = promo_impact["is_promo"].map({True: "Promotion", False: "No Promotion"})
-
-    return {
-        "out_channel_perf": channel_perf,
-        "out_product_econ": prod_econ,
-        "out_funnel_retention": funnel,
-        "out_monthly": monthly,
-        "out_promo_impact": promo_impact[["label", "gmv", "orders", "units", "aov"]],
-    }
+    return kpi, monthly, product, channel, promotion, funnel
 
 
-# ------------------------- orchestrate ---------------------
-def _round_numeric(df: pd.DataFrame) -> pd.DataFrame:
+# ============================================================
+# ORCHESTRATE
+# ============================================================
+def _round_numeric(df):
     for c in df.select_dtypes(include="number").columns:
         df[c] = df[c].round(2)
     return df
@@ -298,78 +280,60 @@ def _round_numeric(df: pd.DataFrame) -> pd.DataFrame:
 
 def main():
     diag: dict = {}
-    print("[1/4] Reading raw + building clean layer…")
-    clean = build_clean(diag)
-    for name, df in clean.items():
-        df.to_csv(OUT / f"{name}.csv", index=False)
+    print("[1/4] Loading raw exports…")
+    orders, catalog, vouchers, traffic, channels, exclusions = load_raw()
 
-    print("[2/4] Building master layer…")
-    master = build_master(clean)
-    master.to_csv(OUT / "master_orders.csv", index=False)
+    print("[2/4] Cleaning + deriving flags…")
+    clean = clean_orders(orders, catalog, exclusions, diag)
+    vouchers_c = clean_vouchers(vouchers, clean, diag)
+    clean.to_csv(OUT / "clean_order_item.csv", index=False)
 
-    print("[3/4] Building out layer…")
-    outs = build_out(master, clean)
-    for name, df in outs.items():
-        _round_numeric(df).to_csv(OUT / f"{name}.csv", index=False)
+    print("[3/4] Building master + out layers…")
+    master = build_master(clean, catalog, channels, vouchers_c)
+    master.to_csv(OUT / "master_order_item.csv", index=False)
 
-    # ---------- Summary KPIs (used by dashboards) ----------
-    cnt = master.loc[master["is_countable"]]
-    kpi = {
-        "period": {
-            "start": str(cnt["date"].min()),
-            "end": str(cnt["date"].max()),
-        },
-        "gmv": float(cnt["line_gmv"].sum()),
-        "net_revenue": float(cnt["line_net_revenue"].sum()),
-        "contribution_margin": float(cnt["line_contribution_margin"].sum()),
-        "commission_paid": float(cnt["line_commission"].sum()),
-        "orders": int(cnt["order_id"].nunique()),
-        "unique_customers": int(cnt["customer_id"].nunique()),
-        "units_sold": int(cnt["quantity"].sum()),
-        "margin_pct": float(cnt["line_contribution_margin"].sum() / cnt["line_gmv"].sum() * 100),
-        "aov": float(cnt["line_gmv"].sum() / cnt["order_id"].nunique()),
+    kpi, monthly, product, channel, promotion, funnel = build_out(master, traffic, channels)
+    _round_numeric(kpi).to_csv(OUT / "out_kpi_summary.csv", index=False)
+    _round_numeric(monthly).to_csv(OUT / "out_monthly.csv", index=False)
+    _round_numeric(product).to_csv(OUT / "out_product.csv", index=False)
+    _round_numeric(channel).to_csv(OUT / "out_channel.csv", index=False)
+    _round_numeric(promotion).to_csv(OUT / "out_promotion.csv", index=False)
+    funnel.to_csv(OUT / "out_funnel.csv", index=False)
+
+    # ---- dashboard payload ----
+    payload = {
+        "kpi": kpi.iloc[0].to_dict(),
+        "monthly": monthly.to_dict(orient="records"),
+        "product": product.to_dict(orient="records"),
+        "channel": channel.to_dict(orient="records"),
+        "promotion": promotion.to_dict(orient="records"),
+        "funnel": funnel.to_dict(orient="records"),
         "data_quality": diag,
     }
-    (OUT / "kpi_summary.json").write_text(json.dumps(kpi, indent=2, default=str))
+    (OUT / "dashboard_data.json").write_text(json.dumps(payload, indent=2, default=str))
 
-    # ---------- Data for dashboards ----------
-    dash_payload = {
-        "kpi": kpi,
-        "channel_perf": outs["out_channel_perf"].to_dict(orient="records"),
-        "product_econ": outs["out_product_econ"].to_dict(orient="records"),
-        "funnel_retention": outs["out_funnel_retention"].to_dict(orient="records"),
-        "monthly": outs["out_monthly"].to_dict(orient="records"),
-        "promo_impact": outs["out_promo_impact"].to_dict(orient="records"),
-    }
-    (OUT / "dashboard_data.json").write_text(json.dumps(dash_payload, indent=2, default=str))
-
-    # ---------- Print the summary ----------
     print("\n[4/4] Pipeline complete.\n")
     print("=" * 60)
     print("DATA QUALITY DIAGNOSTICS")
     print("=" * 60)
-    print(f"  Raw rows read:            {diag['raw_order_rows']:,}")
-    print(f"  Exact duplicates dropped: {diag['duplicates_dropped']:,}")
-    print(f"  Unparseable dates:        {diag['unparseable_dates']:,}")
-    print(f"  Blank-SKU rows:           {diag['blank_sku_rows']:,}")
-    print(f"  Ghost-SKU rows (no cat):  {diag['ghost_sku_rows']:,}")
-    print(f"  Excluded customer rows:   {diag['excluded_customer_rows']:,}")
-    print(f"  Orphan vouchers:          {diag['orphan_vouchers']:,}")
+    for k, v in diag.items():
+        print(f"  {k:<22} {v:>8,}")
     print()
     print("=" * 60)
-    print("BUSINESS KPIs")
+    print("KPI SUMMARY")
     print("=" * 60)
-    print(f"  Period:                {kpi['period']['start']} → {kpi['period']['end']}")
-    print(f"  GMV:                   ฿{kpi['gmv']:>15,.2f}")
-    print(f"  Commission paid:       ฿{kpi['commission_paid']:>15,.2f}")
-    print(f"  Net revenue:           ฿{kpi['net_revenue']:>15,.2f}")
-    print(f"  Contribution margin:   ฿{kpi['contribution_margin']:>15,.2f}  ({kpi['margin_pct']:.1f}%)")
-    print(f"  Orders (unique):       {kpi['orders']:>16,}")
-    print(f"  Unique customers:      {kpi['unique_customers']:>16,}")
-    print(f"  Units sold:            {kpi['units_sold']:>16,}")
-    print(f"  AOV:                   ฿{kpi['aov']:>15,.2f}")
-    print()
-    print(f"Outputs written to: {OUT}")
+    k = kpi.iloc[0]
+    print(f"  Period:              {k['period_start']} → {k['period_end']}")
+    print(f"  Gross GMV:           ฿{k['gross_gmv']:>15,.2f}")
+    print(f"  Commission paid:     ฿{k['commission_paid']:>15,.2f}")
+    print(f"  Net revenue:         ฿{k['net_revenue']:>15,.2f}")
+    print(f"  Gross profit:        ฿{k['gross_profit']:>15,.2f}")
+    print(f"  Contribution margin: ฿{k['contribution_margin']:>15,.2f}  ({k['margin_pct']}%)")
+    print(f"  Orders (unique):     {int(k['orders']):>16,}")
+    print(f"  Unique customers:    {int(k['unique_customers']):>16,}")
+    print(f"  Units sold:          {int(k['units_sold']):>16,}")
+    print(f"  AOV:                 ฿{k['aov']:>15,.2f}")
+    print(f"\nOutputs written to: {OUT}")
 
 
 if __name__ == "__main__":

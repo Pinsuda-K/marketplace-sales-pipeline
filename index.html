@@ -1,603 +1,254 @@
 <!DOCTYPE html>
-<!--
-  Marketplace Sales & GMV Reporting — "Industrial" reporting terminal.
-  Aesthetic: Anton (display) + Barlow Condensed (headings) + IBM Plex Mono (data)
-  Palette:   Deep Navy #003087 + Safety Red #ED1C24 accent, off-white surface.
-  Structure: sidebar-as-sections + full-height scroll-reveal bands.
-  Data:      dashboard_data.json (produced by src/pipeline.py — mock data only).
--->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Marketplace Sales & GMV Reporting</title>
+<title>Marketplace Sales & GMV Reporting Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
-:root{
-  --bg:#f4f5f8; --surface:#ffffff; --ink:#0f172a; --navy:#003087; --navy2:#001c4f;
-  --red:#ed1c24; --red2:#c41219; --steel:#4a5573; --line:#e2e6f0; --lilac:#eef1f9;
-  --muted:#7d8598; --up:#1e874d; --down:#c41219;
-  --display:'Anton',sans-serif; --cond:'Barlow Condensed',sans-serif;
-  --body:'Barlow',sans-serif; --mono:'IBM Plex Mono',monospace;
-  --side:236px;
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f7f8fa; color: #1a2540; padding: 32px; line-height: 1.5;
 }
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);overflow-x:hidden;cursor:none}
-a{color:inherit;text-decoration:none}
-input,button,.tbl-wrap,table{cursor:auto}
+header { max-width: 1400px; margin: 0 auto 24px; }
+header .title { font-size: 1.6rem; font-weight: 700; color: #003087; letter-spacing: -0.01em; }
+header .sub { font-size: 0.95rem; color: #64748b; margin-top: 4px; }
+header .meta { font-size: 0.82rem; color: #94a3b8; margin-top: 10px; }
+header a { color: #003087; text-decoration: none; border-bottom: 1px solid #003087; }
 
-/* cursor */
-#cursor-dot{position:fixed;top:0;left:0;width:6px;height:6px;border-radius:50%;background:var(--red);z-index:9999;pointer-events:none;transform:translate(-50%,-50%)}
-#cursor-ring{position:fixed;top:0;left:0;width:30px;height:30px;border-radius:50%;border:1.5px solid rgba(237,28,36,.45);z-index:9999;pointer-events:none;transform:translate(-50%,-50%);transition:transform .18s ease,border-color .18s ease}
+.container { max-width: 1400px; margin: 0 auto; }
 
-/* sidebar = pages */
-.sidebar{position:fixed;top:0;left:0;width:var(--side);height:100vh;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:26px 22px;z-index:50}
-.brand{font-family:var(--display);font-size:1.35rem;letter-spacing:.05em;color:var(--navy);line-height:1.05}
-.brand .accent{color:var(--red)}
-.brand small{display:block;font-family:var(--mono);font-size:.5rem;letter-spacing:.28em;text-transform:uppercase;color:var(--muted);margin-top:8px;font-weight:400}
-.nav{margin-top:38px;display:flex;flex-direction:column;gap:4px;flex:1}
-.nav a{display:flex;gap:10px;align-items:baseline;padding:11px 12px;border-radius:8px;font-family:var(--cond);font-weight:600;font-size:1.02rem;color:var(--ink);transition:background .18s,color .18s}
-.nav a .no{font-family:var(--mono);font-size:.58rem;color:var(--muted);font-weight:400;width:20px}
-.nav a:hover{background:var(--lilac)}
-.nav a.active{background:var(--navy);color:#fff}
-.nav a.active .no{color:#7c9bd4}
-.side-foot{font-family:var(--mono);font-size:.5rem;color:var(--muted);line-height:1.7;margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.kpi { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px; }
+.kpi .lbl { font-size: 0.68rem; font-weight: 500; color: #64748b; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.kpi .val { font-size: 1.5rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; }
+.kpi .delta { font-size: 0.75rem; color: #64748b; margin-top: 6px; }
+.kpi.accent .val { color: #003087; }
+.kpi.warn .val { color: #ed1c24; }
 
-/* main */
-.main{margin-left:var(--side)}
-.page{display:none}
-.page.active{display:block}
+.grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
+.grid.wide { grid-template-columns: 2fr 1fr; }
+.card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 20px; }
+.card h3 { font-size: 0.78rem; font-weight: 600; color: #64748b; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; }
+.chartbox { height: 300px; position: relative; }
+.chartbox.tall { height: 380px; }
 
-/* hero */
-.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:0 7vw;position:relative}
-.eyebrow{font-family:var(--mono);font-size:.62rem;letter-spacing:.28em;text-transform:uppercase;color:var(--red);font-weight:500}
-.hero h1{font-family:var(--display);font-size:clamp(2.8rem,7vw,5.4rem);line-height:.96;color:var(--navy);letter-spacing:.01em;margin:16px 0 8px}
-.hero .period{font-family:var(--cond);font-size:1.15rem;color:var(--muted);font-weight:500}
-.hero .thesis{margin-top:42px;display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
-.hero .thesis .num{font-family:var(--display);font-size:clamp(2.6rem,6vw,4.4rem);color:var(--navy);line-height:.9}
-.hero .thesis .num em{color:var(--red);font-style:normal}
-.hero .thesis .cap{font-family:var(--body);max-width:360px;color:var(--ink);font-size:.95rem;line-height:1.5;padding-bottom:6px}
-.scrollcue{margin-top:54px;font-family:var(--mono);font-size:.56rem;letter-spacing:.26em;text-transform:uppercase;color:var(--muted)}
-.scrollcue::after{content:"";display:block;width:1px;height:34px;background:var(--red);margin-top:12px;opacity:.6}
+.tbl { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.tbl th, .tbl td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #e2e8f0; }
+.tbl th { font-weight: 600; color: #64748b; text-align: right; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.tbl th:first-child, .tbl td:first-child { text-align: left; }
+.tbl tr:hover td { background: #f8fafc; }
+.pill { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 500; }
+.pill.own { background: #dbeafe; color: #1e3a8a; }
+.pill.mp { background: #fee2e2; color: #991b1b; }
 
-/* band = component + note, alternating sides */
-.band{min-height:88vh;display:grid;grid-template-columns:1fr 1fr;gap:5vw;align-items:center;padding:8vh 7vw;border-top:1px solid var(--line)}
-.band.flip .viz{order:2}
-.band.flip .note{order:1}
-.note .eyebrow{margin-bottom:14px}
-.note h2{font-family:var(--cond);font-weight:700;font-size:clamp(1.5rem,2.6vw,2.1rem);color:var(--navy);line-height:1.05;margin-bottom:14px;text-transform:uppercase;letter-spacing:.01em}
-.note h2 em{color:var(--red);font-style:normal}
-.note p{font-family:var(--body);font-size:1rem;line-height:1.62;color:#37415b;max-width:440px}
-.note p+p{margin-top:12px}
-.note .kicker{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-top:18px;padding-top:14px;border-top:1px dashed var(--line);max-width:440px}
+.dq { background: #003087; color: #fff; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+.dq h3 { font-size: 0.75rem; font-weight: 500; color: #a5b8e2; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 14px; }
+.dq-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 14px; }
+.dq-item .n { font-size: 1.4rem; font-weight: 700; }
+.dq-item.hi .n { color: #ffb4b8; }
+.dq-item .l { font-size: 0.7rem; color: #a5b8e2; margin-top: 4px; letter-spacing: 0.03em; }
 
-/* viz pieces */
-.statwrap{display:flex;flex-direction:column;gap:18px}
-.statrow{display:flex;gap:18px;flex-wrap:wrap}
-.stat{flex:1;min-width:160px}
-.stat .lbl{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
-.stat .val{font-family:var(--display);font-size:clamp(1.9rem,3.1vw,2.7rem);color:var(--navy);line-height:1;margin-top:8px}
-.stat .val.r{color:var(--red)}
-.stat .delta{font-family:var(--mono);font-size:.62rem;font-weight:500;margin-top:7px}
-.delta.u{color:var(--up)} .delta.d{color:var(--down)} .delta.n{color:var(--muted)}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;box-shadow:0 8px 28px rgba(0,28,79,.06)}
-.card h3{font-family:var(--mono);font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
-.chartbox{height:330px;position:relative}
-.chartbox.tall{height:420px}
-.tbl-wrap{max-height:400px;overflow:auto;border-radius:10px}
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.72rem}
-th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line)}
-th{color:#fff;font-weight:500;background:var(--navy);position:sticky;top:0;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase}
-th:first-child,td:first-child{text-align:left}
-td{color:#37415b}
-tr:hover td{background:var(--lilac)}
-.pill{display:inline-block;font-family:var(--mono);font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;padding:2px 7px;border-radius:3px;font-weight:500}
-.pill.own{background:var(--navy);color:#fff}
-.pill.mp{background:var(--red);color:#fff}
+footer { max-width: 1400px; margin: 40px auto 0; text-align: center; font-size: 0.8rem; color: #94a3b8; }
+footer a { color: #64748b; }
 
-/* funnel viz */
-.fbar{display:flex;flex-direction:column;gap:6px;margin-top:6px}
-.fstage{display:flex;flex-direction:column;align-items:center}
-.fstage .bar{display:flex;align-items:center;justify-content:space-between;gap:16px;background:linear-gradient(90deg,var(--navy),var(--red));color:#fff;border-radius:8px;padding:11px 18px;box-shadow:0 5px 12px rgba(0,28,79,.15)}
-.fstage .nm{font-family:var(--cond);font-weight:600;font-size:.95rem;letter-spacing:.02em}
-.fstage .vl{font-family:var(--display);font-size:1.3rem;line-height:1}
-.fcvr{font-family:var(--mono);font-size:.6rem;color:var(--red);padding:5px 0;letter-spacing:.04em}
-
-/* reveal */
-[data-reveal]{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.16,1,.3,1),transform .8s cubic-bezier(.16,1,.3,1)}
-[data-reveal].visible{opacity:1;transform:none}
-
-/* data-quality strip */
-.dq{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:22px 24px;border-radius:14px;margin-bottom:24px}
-.dq h4{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;text-transform:uppercase;color:#a5b8e2;margin-bottom:14px}
-.dq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px}
-.dq-item .n{font-family:var(--display);font-size:1.6rem;line-height:1;color:#fff}
-.dq-item.hi .n{color:var(--red)}
-.dq-item .l{font-family:var(--mono);font-size:.5rem;letter-spacing:.14em;text-transform:uppercase;color:#a5b8e2;margin-top:6px}
-
-@media (hover:none){body{cursor:auto}#cursor-dot,#cursor-ring{display:none}}
-@media (prefers-reduced-motion:reduce){[data-reveal]{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
-@media (max-width:920px){
-  :root{--side:0px}
-  .sidebar{position:static;width:100%;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;padding:16px 20px}
-  .nav{flex-direction:row;flex-wrap:wrap;margin-top:0;gap:4px}
-  .side-foot{display:none}
-  .main{margin-left:0}
-  .band{grid-template-columns:1fr;gap:30px;min-height:auto}
-  .band.flip .viz{order:1}.band.flip .note{order:2}
+@media (max-width: 900px) {
+  .grid, .grid.wide { grid-template-columns: 1fr; }
+  body { padding: 20px 14px; }
 }
 </style>
 </head>
 <body>
-<div id="cursor-dot"></div><div id="cursor-ring"></div>
-
-<aside class="sidebar">
-  <div class="brand">MARKETPLACE<br><span class="accent">/ REPORTING</span><small>Mock data · Coffee equipment</small></div>
-  <nav class="nav">
-    <a href="#" class="active" data-page="channel"><span class="no">01</span>Channel Performance</a>
-    <a href="#" data-page="product"><span class="no">02</span>Product Economics</a>
-    <a href="#" data-page="funnel"><span class="no">03</span>Conversion &amp; Retention</a>
-  </nav>
-  <div class="side-foot">
-    Source: mock exports<br>
-    Pipeline: <span style="color:var(--red)">raw → clean → master → out</span><br>
-    All numbers traceable to cell
+<header>
+  <div class="title">Marketplace Sales &amp; GMV Reporting</div>
+  <div class="sub">Mock data · Specialty coffee equipment · Multi-channel storefront</div>
+  <div class="meta">
+    <span id="period">Loading…</span>  ·  
+    <a href="https://github.com/Pinsuda-K/marketplace-sales-pipeline" target="_blank">Repo &amp; source</a>  ·  
+    <a href="./dashboard/" target="_blank">Alt dashboard view</a>
   </div>
-</aside>
+</header>
 
-<main class="main">
+<div class="container">
+  <div class="kpis" id="kpis"></div>
 
-  <!-- ================= PAGE 1: CHANNEL PERFORMANCE ================= -->
-  <section class="page active" id="page-channel">
+  <div class="dq">
+    <h3>Data quality diagnostics · this run</h3>
+    <div class="dq-grid" id="dqGrid"></div>
+  </div>
 
-    <div class="hero">
-      <div class="eyebrow" data-reveal>01 — Channel Performance</div>
-      <h1 data-reveal>Channel<br>Performance</h1>
-      <div class="period" data-reveal id="periodLabel">Loading…</div>
-      <div class="thesis" data-reveal>
-        <div class="num" id="heroGmv">฿0</div>
-        <div class="cap">Gross merchandise value across all channels this period. Below: how it splits between marketplaces and the own-store, and what actually lands in the bank after platform commissions.</div>
-      </div>
-      <div class="scrollcue" data-reveal>Scroll</div>
-    </div>
+  <div class="grid wide">
+    <div class="card"><h3>Monthly trend — GMV, Net Revenue, Contribution Margin</h3><div class="chartbox tall"><canvas id="monthlyChart"></canvas></div></div>
+    <div class="card"><h3>Conversion funnel</h3><div class="chartbox tall"><canvas id="funnelChart"></canvas></div></div>
+  </div>
 
-    <!-- KPI STRIP -->
-    <div class="band" data-reveal>
-      <div class="viz"><div class="statwrap">
-        <div class="statrow">
-          <div class="stat"><div class="lbl">GMV</div><div class="val" id="kpi_gmv">฿0</div></div>
-          <div class="stat"><div class="lbl">Net Revenue</div><div class="val r" id="kpi_net">฿0</div></div>
-        </div>
-        <div class="statrow">
-          <div class="stat"><div class="lbl">Contribution Margin</div><div class="val" id="kpi_margin">฿0</div><div class="delta n" id="kpi_marginpct"></div></div>
-          <div class="stat"><div class="lbl">Commission Paid</div><div class="val" id="kpi_comm">฿0</div></div>
-        </div>
-        <div class="statrow">
-          <div class="stat"><div class="lbl">Orders</div><div class="val" id="kpi_ord">0</div></div>
-          <div class="stat"><div class="lbl">AOV</div><div class="val" id="kpi_aov">฿0</div></div>
-        </div>
-      </div></div>
-      <div class="note">
-        <div class="eyebrow">Headline</div>
-        <h2>Two <em>numbers</em> that matter</h2>
-        <p><b>Net revenue</b> is what marketplaces pay out after commission — the money that actually lands. <b>Contribution margin</b> is what's left after both commission and the cost of goods. Every downstream chart here reconciles back to these.</p>
-        <div class="kicker">Definitions locked in the master layer — no per-chart re-computation.</div>
-      </div>
-    </div>
+  <div class="grid">
+    <div class="card"><h3>Channel performance</h3><div style="overflow-x:auto"><table class="tbl" id="channelTable"></table></div></div>
+    <div class="card"><h3>Promotion effect on AOV</h3><div class="chartbox"><canvas id="promoChart"></canvas></div></div>
+  </div>
 
-    <!-- CHANNEL MIX TABLE -->
-    <div class="band flip" data-reveal>
-      <div class="viz"><div class="card">
-        <h3>Channel-level Contribution</h3>
-        <div class="tbl-wrap"><table id="channelTable"></table></div>
-      </div></div>
-      <div class="note">
-        <div class="eyebrow">Marketplace vs Own-store</div>
-        <h2>Volume ≠ <em>profit</em></h2>
-        <p>Marketplaces move the highest volume — but the own-store, with zero commission, delivers a materially higher contribution margin per baht sold.</p>
-        <p>The cannibalization question sits underneath this: which own-store customers would still buy direct if the marketplace listing didn't exist?</p>
-        <div class="kicker">Commission rates: marketplaces 12–15%, own-store 0%.</div>
-      </div>
-    </div>
+  <div class="grid">
+    <div class="card"><h3>Top products by GMV</h3><div class="chartbox tall"><canvas id="productChart"></canvas></div></div>
+    <div class="card"><h3>Contribution margin % — top 10 (min 5 units)</h3><div class="chartbox tall"><canvas id="marginChart"></canvas></div></div>
+  </div>
+</div>
 
-    <!-- CHANNEL MIX CHART -->
-    <div class="band" data-reveal>
-      <div class="viz"><div class="card"><h3>GMV vs Net Revenue vs Contribution Margin — by Channel</h3><div class="chartbox"><canvas id="channelChart"></canvas></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Waterfall</div>
-        <h2>Where the <em>money leaks</em></h2>
-        <p>For each channel: what came in as GMV, what remained as net revenue after commission, and what remained as contribution margin after cost of goods.</p>
-        <p>The gap between the GMV bar and the margin bar is the total per-channel cost of doing business.</p>
-      </div>
-    </div>
+<footer>
+  Every number on this dashboard is reproducible from <code>data/raw_*.csv</code> by running <code>python src/pipeline.py</code>.<br>
+  Formula-level equivalence to Google Sheets: see <a href="https://github.com/Pinsuda-K/marketplace-sales-pipeline/blob/main/docs/sheets_formula_crosswalk.md">docs/sheets_formula_crosswalk.md</a>.
+</footer>
 
-    <!-- MONTHLY TREND -->
-    <div class="band flip" data-reveal>
-      <div class="viz"><div class="card"><h3>Monthly Trend — GMV vs Contribution Margin</h3><div class="chartbox"><canvas id="monthlyChart"></canvas></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Trend</div>
-        <h2>The <em>shape</em> of the six months</h2>
-        <p>GMV as a line, contribution margin as bars. Read the shape: was growth steady, or carried by a handful of promo cycles?</p>
-        <p>When the bars stay flat while the line rises, growth is coming from discounted volume, not margin expansion.</p>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ================= PAGE 2: PRODUCT ECONOMICS ================= -->
-  <section class="page" id="page-product">
-
-    <div class="hero">
-      <div class="eyebrow" data-reveal>02 — Product Economics</div>
-      <h1 data-reveal>Product<br>Economics</h1>
-      <div class="period" data-reveal id="prodPeriod">Loading…</div>
-      <div class="thesis" data-reveal>
-        <div class="num" id="heroSku">0<em> SKUs</em></div>
-        <div class="cap">Every product sold in the period, ranked by contribution margin. Below: the volume leaders, the margin leaders, and where those lists disagree.</div>
-      </div>
-      <div class="scrollcue" data-reveal>Scroll</div>
-    </div>
-
-    <!-- TOP BY REVENUE -->
-    <div class="band" data-reveal>
-      <div class="viz"><div class="card"><h3>Top Products by Net Revenue</h3><div class="chartbox tall"><canvas id="prodRevChart"></canvas></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Value leaders</div>
-        <h2>Where the <em>money</em> came from</h2>
-        <p>The products carrying the top-line. Espresso machines and high-end grinders dominate here — big-ticket items where a single unit moves the needle.</p>
-        <p>These SKUs are also the ones most exposed to marketplace commission drag, so the margin picture below matters more for them than for consumables.</p>
-      </div>
-    </div>
-
-    <!-- MARGIN CHART -->
-    <div class="band flip" data-reveal>
-      <div class="viz"><div class="card"><h3>Contribution Margin % by Product</h3><div class="chartbox tall"><canvas id="prodMarginChart"></canvas></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Margin leaders</div>
-        <h2>What the <em>list changes</em> tell you</h2>
-        <p>Ranked by margin % rather than revenue. The consumables and accessories quietly dominate this list — smaller absolute contribution per unit, much larger relative margin.</p>
-        <p>The two lists together are the "keep the lights on / attach to the big-ticket sale" split.</p>
-      </div>
-    </div>
-
-    <!-- FULL TABLE -->
-    <div class="band" data-reveal>
-      <div class="viz"><div class="card"><h3>Full SKU Ledger — sorted by Net Revenue</h3><div class="tbl-wrap"><table id="prodTable"></table></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Ledger</div>
-        <h2>The <em>record</em> behind the charts</h2>
-        <p>Every SKU sold in the window: GMV, commission paid, net revenue, cost of goods, contribution margin, and units.</p>
-        <p>Any number a stakeholder questions on the two charts above resolves down to a specific row here.</p>
-      </div>
-    </div>
-
-  </section>
-
-  <!-- ================= PAGE 3: CONVERSION & RETENTION ================= -->
-  <section class="page" id="page-funnel">
-
-    <div class="hero">
-      <div class="eyebrow" data-reveal>03 — Conversion &amp; Retention</div>
-      <h1 data-reveal>Conversion<br>&amp; Retention</h1>
-      <div class="period" data-reveal id="funPeriod">Loading…</div>
-      <div class="thesis" data-reveal>
-        <div class="num" id="heroCust">0<em> customers</em></div>
-        <div class="cap">Unique buyers this period. Below: how they got to the checkout, and how many came back for a second order.</div>
-      </div>
-      <div class="scrollcue" data-reveal>Scroll</div>
-    </div>
-
-    <!-- DATA QUALITY STRIP -->
-    <div class="band" data-reveal>
-      <div class="viz">
-        <div class="dq">
-          <h4>Data quality diagnostics (this run)</h4>
-          <div class="dq-grid" id="dqGrid"></div>
-        </div>
-        <div class="card"><h3>Funnel — By Channel</h3><div class="tbl-wrap"><table id="funnelTable"></table></div></div>
-      </div>
-      <div class="note">
-        <div class="eyebrow">Discovery → Paid</div>
-        <h2>The <em>conversion</em> path</h2>
-        <p>For each channel: visitors, product views, add-to-cart, and paid orders — plus the drop-off rate at each step and the repeat-customer rate.</p>
-        <p>The top strip is the data-quality diagnostic from this pipeline run — every downstream number here is a function of these input signals surviving the clean layer.</p>
-        <div class="kicker">Diagnostics are surfaced on every run, not buried in code.</div>
-      </div>
-    </div>
-
-    <!-- OVERALL FUNNEL -->
-    <div class="band flip" data-reveal>
-      <div class="viz"><div class="card"><h3>Overall Conversion Funnel</h3><div class="fbar" id="funnelViz"></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Aggregate</div>
-        <h2>Where they <em>drop off</em></h2>
-        <p>Aggregated across all channels: visitors → views → add-to-cart → paid orders.</p>
-        <p>The largest single drop is at the visitor-to-view step — a browsing signal — followed by view-to-cart. The cart-to-paid conversion is comparatively strong once someone has committed to a cart.</p>
-      </div>
-    </div>
-
-    <!-- PROMOTION IMPACT -->
-    <div class="band" data-reveal>
-      <div class="viz"><div class="card"><h3>Promotion Impact — AOV Comparison</h3><div class="chartbox"><canvas id="promoChart"></canvas></div></div></div>
-      <div class="note">
-        <div class="eyebrow">Promo effect</div>
-        <h2>Bigger baskets, not just <em>more</em> baskets</h2>
-        <p>Promotion days pull in materially higher AOV than non-promotion days — the discount attracts customers who bundle more items per cart, not just customers who would have bought anyway.</p>
-        <p>The counterweight: promo orders carry a lower per-unit margin, so the AOV lift and margin drag need to be read together to score the campaign.</p>
-      </div>
-    </div>
-
-  </section>
-
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="./assets/chart.umd.min.js"></script>
 <script>
-let DATA = null;
-const baht  = n => '฿' + (Math.round(n||0)).toLocaleString('en-US');
+const baht  = n => '฿' + Math.round(n||0).toLocaleString('en-US');
 const bahtM = n => '฿' + ((n||0)/1000000).toFixed(2) + 'M';
 const intf  = n => (n||0).toLocaleString('en-US');
 const pct   = n => (n||0).toFixed(1) + '%';
 
-async function load(){
-  // Try local (side-by-side) first, then the output/ path used by the pipeline
+const NAVY = '#003087', NAVY2 = '#3b5bad', RED = '#ed1c24', SLATE = '#64748b', SLATE2 = '#94a3b8';
+
+async function load() {
   let r;
-  try { r = await fetch('./dashboard_data.json'); if (!r.ok) throw 0; }
-  catch { r = await fetch('../output/dashboard_data.json'); }
-  DATA = await r.json();
-  renderAll();
+  try { r = await fetch('./output/dashboard_data.json'); if (!r.ok) throw 0; }
+  catch { r = await fetch('./dashboard_data.json'); }
+  const D = await r.json();
+  render(D);
 }
 
-function renderAll(){
-  const k = DATA.kpi;
-  const period = `${k.period.start} → ${k.period.end}  ·  Mock data`;
-  ['periodLabel','prodPeriod','funPeriod'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.textContent = period;
-  });
+function render(D) {
+  const k = D.kpi;
+  document.getElementById('period').textContent =
+    `${k.period_start} → ${k.period_end}  ·  ${intf(k.orders)} orders  ·  ${intf(k.unique_customers)} unique customers`;
 
-  document.getElementById('heroGmv').textContent = bahtM(k.gmv);
-  document.getElementById('heroSku').innerHTML = `${DATA.product_econ.length}<em> SKUs</em>`;
-  document.getElementById('heroCust').innerHTML = `${intf(k.unique_customers)}<em> customers</em>`;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi accent"><div class="lbl">Gross GMV</div><div class="val">${bahtM(k.gross_gmv)}</div></div>
+    <div class="kpi"><div class="lbl">Net Revenue</div><div class="val">${bahtM(k.net_revenue)}</div><div class="delta">after commission &amp; returns</div></div>
+    <div class="kpi"><div class="lbl">Contribution Margin</div><div class="val">${bahtM(k.contribution_margin)}</div><div class="delta">${pct(k.margin_pct)} of GMV</div></div>
+    <div class="kpi warn"><div class="lbl">Commission Paid</div><div class="val">${bahtM(k.commission_paid)}</div></div>
+    <div class="kpi"><div class="lbl">Orders</div><div class="val">${intf(k.orders)}</div></div>
+    <div class="kpi"><div class="lbl">AOV</div><div class="val">${baht(k.aov)}</div></div>
+  `;
 
-  document.getElementById('kpi_gmv').textContent = bahtM(k.gmv);
-  document.getElementById('kpi_net').textContent = bahtM(k.net_revenue);
-  document.getElementById('kpi_margin').textContent = bahtM(k.contribution_margin);
-  document.getElementById('kpi_marginpct').textContent = pct(k.margin_pct) + ' margin';
-  document.getElementById('kpi_comm').textContent = bahtM(k.commission_paid);
-  document.getElementById('kpi_ord').textContent = intf(k.orders);
-  document.getElementById('kpi_aov').textContent = baht(k.aov);
+  const dq = D.data_quality;
+  const dqItems = [
+    { n: intf(dq.raw_order_rows),      l: 'Raw rows read',      hi: false },
+    { n: intf(dq.duplicates_dropped),  l: 'Duplicates dropped', hi: dq.duplicates_dropped > 0 },
+    { n: intf(dq.blank_sku_rows),      l: 'Blank SKU rows',     hi: dq.blank_sku_rows > 0 },
+    { n: intf(dq.ghost_sku_rows),      l: 'Ghost SKUs',         hi: dq.ghost_sku_rows > 0 },
+    { n: intf(dq.canceled_rows),       l: 'Canceled orders',    hi: false },
+    { n: intf(dq.reversal_rows),       l: 'Reversal rows',      hi: false },
+    { n: intf(dq.excluded_rows),       l: 'Excluded (QA/staff)', hi: false },
+    { n: intf(dq.orphan_vouchers),     l: 'Orphan vouchers',    hi: dq.orphan_vouchers > 0 },
+  ];
+  document.getElementById('dqGrid').innerHTML = dqItems.map(i =>
+    `<div class="dq-item${i.hi?' hi':''}"><div class="n">${i.n}</div><div class="l">${i.l}</div></div>`
+  ).join('');
 
-  renderChannelTable();
-  renderChannelChart();
-  renderMonthlyChart();
-  renderProdRevChart();
-  renderProdMarginChart();
-  renderProdTable();
-  renderFunnelTable();
-  renderFunnelViz();
-  renderPromoChart();
-  renderDq();
-  observeReveal();
-}
-
-function renderChannelTable(){
-  const rows = DATA.channel_perf.slice().sort((a,b) => b.gmv - a.gmv);
+  // channel table
+  const rows = D.channel.slice().sort((a,b) => b.gross_gmv - a.gross_gmv);
   let h = '<thead><tr><th>Channel</th><th>Type</th><th>GMV</th><th>Commission</th><th>Net Rev</th><th>Margin</th><th>Margin %</th><th>Orders</th></tr></thead><tbody>';
   rows.forEach(r => {
-    const type = r.is_own_store_bool ? '<span class="pill own">OWN</span>' : '<span class="pill mp">MP</span>';
-    h += `<tr><td>${r.channel_name}</td><td>${type}</td><td>${baht(r.gmv)}</td><td>${baht(r.commission_paid)}</td><td>${baht(r.net_revenue)}</td><td>${baht(r.contribution_margin)}</td><td>${pct(r.margin_pct)}</td><td>${intf(r.orders)}</td></tr>`;
+    const t = r.is_own_store_bool ? '<span class="pill own">OWN</span>' : '<span class="pill mp">MP</span>';
+    h += `<tr><td>${r.channel_name}</td><td>${t}</td><td>${baht(r.gross_gmv)}</td><td>${baht(r.commission)}</td><td>${baht(r.net_revenue)}</td><td>${baht(r.contribution_margin)}</td><td>${pct(r.margin_pct)}</td><td>${intf(r.orders)}</td></tr>`;
   });
   document.getElementById('channelTable').innerHTML = h + '</tbody>';
-}
 
-let _channelChart;
-function renderChannelChart(){
-  const rows = DATA.channel_perf.slice().sort((a,b) => b.gmv - a.gmv);
-  if (_channelChart) _channelChart.destroy();
-  _channelChart = new Chart(document.getElementById('channelChart'), {
+  const chartFont = { family: 'Inter, sans-serif', size: 11 };
+
+  new Chart(document.getElementById('monthlyChart'), {
     type: 'bar',
     data: {
-      labels: rows.map(r => r.channel_name),
+      labels: D.monthly.map(r => r.year_month),
       datasets: [
-        { label:'GMV',                 data:rows.map(r=>r.gmv),                backgroundColor:'#003087' },
-        { label:'Net Revenue',         data:rows.map(r=>r.net_revenue),         backgroundColor:'#4a5573' },
-        { label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ed1c24' },
+        { type:'line', label:'Gross GMV',       data: D.monthly.map(r => r.gross_gmv),   borderColor: NAVY, backgroundColor: NAVY, tension: .25, borderWidth: 2.5, pointRadius: 3, order: 0 },
+        { type:'bar',  label:'Net Revenue',     data: D.monthly.map(r => r.net_revenue),            backgroundColor: NAVY2, order: 1 },
+        { type:'bar',  label:'Contribution Margin', data: D.monthly.map(r => r.contribution_margin), backgroundColor: RED, order: 1 },
       ]
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'top', labels:{ font:{ family:'IBM Plex Mono', size:10 }, boxWidth:11 } } },
-      scales:{
-        y:{ beginAtZero:true, ticks:{ font:{ family:'IBM Plex Mono', size:10 }, callback: v => (v/1000000).toFixed(1)+'M' } },
-        x:{ ticks:{ font:{ family:'IBM Plex Mono', size:10 } } }
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'top', labels: { font: chartFont, boxWidth: 12 } } },
+      scales: {
+        y: { beginAtZero: true, ticks: { font: chartFont, callback: v => (v/1000000).toFixed(1)+'M' } },
+        x: { ticks: { font: chartFont } }
       }
     }
   });
-}
 
-let _monthlyChart;
-function renderMonthlyChart(){
-  const rows = DATA.monthly.slice();
-  if (_monthlyChart) _monthlyChart.destroy();
-  _monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+  new Chart(document.getElementById('funnelChart'), {
     type: 'bar',
     data: {
-      labels: rows.map(r => r.month),
+      labels: D.funnel.map(f => f.stage),
+      datasets: [{ label: 'Count', data: D.funnel.map(f => f.count), backgroundColor: [NAVY, NAVY2, '#7a94ce', RED] }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: chartFont, callback: v => intf(v) } },
+        y: { ticks: { font: chartFont } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('promoChart'), {
+    type: 'bar',
+    data: {
+      labels: D.promotion.map(r => r.label),
+      datasets: [{ label: 'AOV', data: D.promotion.map(r => r.aov), backgroundColor: [SLATE, RED] }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { font: chartFont, callback: v => baht(v) } },
+        x: { ticks: { font: chartFont } }
+      }
+    }
+  });
+
+  const topProducts = D.product.slice(0, 10);
+  new Chart(document.getElementById('productChart'), {
+    type: 'bar',
+    data: {
+      labels: topProducts.map(r => r.item_name),
       datasets: [
-        { type:'line', label:'GMV',              data:rows.map(r=>r.gmv),                 borderColor:'#003087', backgroundColor:'#003087', tension:.25, borderWidth:2.5, pointRadius:3, order:0 },
-        { type:'bar',  label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ed1c24', order:1 },
+        { label: 'Gross GMV',            data: topProducts.map(r => r.gross_gmv),            backgroundColor: NAVY },
+        { label: 'Contribution Margin',  data: topProducts.map(r => r.contribution_margin),  backgroundColor: RED },
       ]
     },
     options: {
-      responsive:true, maintainAspectRatio:false, interaction:{ mode:'index', intersect:false },
-      plugins:{ legend:{ position:'top', labels:{ font:{ family:'IBM Plex Mono', size:10 }, boxWidth:11 } } },
-      scales:{
-        y:{ beginAtZero:true, ticks:{ font:{ family:'IBM Plex Mono', size:10 }, callback: v => (v/1000000).toFixed(1)+'M' } },
-        x:{ ticks:{ font:{ family:'IBM Plex Mono', size:10 } } }
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'top', labels: { font: chartFont, boxWidth: 11 } } },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: chartFont, callback: v => (v/1000000).toFixed(1)+'M' } },
+        y: { ticks: { font: {...chartFont, size: 10} } }
       }
     }
   });
-}
 
-let _prodRev, _prodMargin;
-function renderProdRevChart(){
-  const rows = DATA.product_econ.slice(0,10);
-  if (_prodRev) _prodRev.destroy();
-  _prodRev = new Chart(document.getElementById('prodRevChart'), {
+  const marginTop = D.product.slice().filter(r => r.units >= 5).sort((a,b) => b.margin_pct - a.margin_pct).slice(0, 10);
+  new Chart(document.getElementById('marginChart'), {
     type: 'bar',
     data: {
-      labels: rows.map(r => r.item_name),
-      datasets: [
-        { label:'Net Revenue',         data:rows.map(r=>r.net_revenue),         backgroundColor:'#003087' },
-        { label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ed1c24' },
-      ]
+      labels: marginTop.map(r => r.item_name),
+      datasets: [{ label: 'Margin %', data: marginTop.map(r => r.margin_pct), backgroundColor: RED }]
     },
     options: {
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ position:'top', labels:{ font:{ family:'IBM Plex Mono', size:10 }, boxWidth:11 } } },
-      scales:{
-        x:{ beginAtZero:true, ticks:{ font:{ family:'IBM Plex Mono', size:9 }, callback: v => (v/1000000).toFixed(1)+'M' } },
-        y:{ ticks:{ font:{ family:'IBM Plex Mono', size:9 } } }
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { font: chartFont, callback: v => v.toFixed(0)+'%' } },
+        y: { ticks: { font: {...chartFont, size: 10} } }
       }
     }
   });
 }
 
-function renderProdMarginChart(){
-  const rows = DATA.product_econ.slice().filter(r => r.units_sold >= 5).sort((a,b) => b.margin_pct - a.margin_pct).slice(0,10);
-  if (_prodMargin) _prodMargin.destroy();
-  _prodMargin = new Chart(document.getElementById('prodMarginChart'), {
-    type: 'bar',
-    data: {
-      labels: rows.map(r => r.item_name),
-      datasets: [{ label:'Contribution Margin %', data:rows.map(r=>r.margin_pct), backgroundColor:'#ed1c24' }]
-    },
-    options: {
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{ beginAtZero:true, ticks:{ font:{ family:'IBM Plex Mono', size:9 }, callback: v => v.toFixed(0)+'%' } },
-        y:{ ticks:{ font:{ family:'IBM Plex Mono', size:9 } } }
-      }
-    }
-  });
-}
-
-function renderProdTable(){
-  const rows = DATA.product_econ.slice();
-  let h = '<thead><tr><th>SKU</th><th>Product</th><th>Category</th><th>Units</th><th>GMV</th><th>Commission</th><th>Net Rev</th><th>Margin</th><th>Margin %</th></tr></thead><tbody>';
-  rows.forEach(r => {
-    h += `<tr><td>${r.sku}</td><td>${r.item_name}</td><td>${r.category}</td><td>${intf(r.units_sold)}</td><td>${baht(r.gmv)}</td><td>${baht(r.commission_paid)}</td><td>${baht(r.net_revenue)}</td><td>${baht(r.contribution_margin)}</td><td>${pct(r.margin_pct)}</td></tr>`;
-  });
-  document.getElementById('prodTable').innerHTML = h + '</tbody>';
-}
-
-function renderFunnelTable(){
-  const rows = DATA.funnel_retention.slice();
-  let h = '<thead><tr><th>Channel</th><th>Visitors</th><th>Views</th><th>Add-to-Cart</th><th>Paid</th><th>Conv %</th><th>Repeat %</th></tr></thead><tbody>';
-  rows.forEach(r => {
-    h += `<tr><td>${r.channel_name}</td><td>${intf(r.visitors)}</td><td>${intf(r.views)}</td><td>${intf(r.add_to_cart)}</td><td>${intf(r.paid_orders)}</td><td>${pct(r.conv_rate)}</td><td>${pct(r.repeat_rate_pct)}</td></tr>`;
-  });
-  document.getElementById('funnelTable').innerHTML = h + '</tbody>';
-}
-
-function renderFunnelViz(){
-  const agg = DATA.funnel_retention.reduce((a,r) => ({
-    v:a.v+r.visitors, w:a.w+r.views, c:a.c+r.add_to_cart, p:a.p+r.paid_orders
-  }), {v:0,w:0,c:0,p:0});
-  const stages = [
-    { nm:'Visitors',   vl: agg.v, w: 100 },
-    { nm:'Views',      vl: agg.w, w:  82 },
-    { nm:'Add to Cart',vl: agg.c, w:  58 },
-    { nm:'Paid',       vl: agg.p, w:  32 },
-  ];
-  let h = '';
-  stages.forEach((s,i) => {
-    h += `<div class="fstage" style="width:${s.w}%"><div class="bar" style="width:100%"><span class="nm">${s.nm}</span><span class="vl">${intf(s.vl)}</span></div></div>`;
-    if (i < stages.length - 1) {
-      const nx = stages[i+1];
-      const drop = ((s.vl - nx.vl) / s.vl * 100).toFixed(1);
-      h += `<div class="fcvr">↓ ${(nx.vl/s.vl*100).toFixed(1)}% to next  ·  −${drop}% drop-off</div>`;
-    }
-  });
-  document.getElementById('funnelViz').innerHTML = h;
-}
-
-let _promoChart;
-function renderPromoChart(){
-  const rows = DATA.promo_impact.slice();
-  if (_promoChart) _promoChart.destroy();
-  _promoChart = new Chart(document.getElementById('promoChart'), {
-    type:'bar',
-    data:{
-      labels: rows.map(r => r.label),
-      datasets: [{ label:'AOV', data:rows.map(r=>r.aov), backgroundColor:['#4a5573','#ed1c24'] }]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        y:{ beginAtZero:true, ticks:{ font:{ family:'IBM Plex Mono', size:10 }, callback: v => baht(v) } },
-        x:{ ticks:{ font:{ family:'IBM Plex Mono', size:11 } } }
-      }
-    }
-  });
-}
-
-function renderDq(){
-  const dq = DATA.kpi.data_quality;
-  const items = [
-    { n: intf(dq.raw_order_rows),        l:'Raw rows read',           hi:false },
-    { n: intf(dq.duplicates_dropped),    l:'Duplicates dropped',      hi: dq.duplicates_dropped > 0 },
-    { n: intf(dq.blank_sku_rows),        l:'Blank SKU rows',          hi: dq.blank_sku_rows > 0 },
-    { n: intf(dq.ghost_sku_rows),        l:'Ghost SKU (no catalog)',  hi: dq.ghost_sku_rows > 0 },
-    { n: intf(dq.excluded_customer_rows),l:'Excluded (QA/staff)',     hi:false },
-    { n: intf(dq.orphan_vouchers),       l:'Orphan vouchers',         hi: dq.orphan_vouchers > 0 },
-  ];
-  let h = '';
-  items.forEach(i => {
-    h += `<div class="dq-item${i.hi?' hi':''}"><div class="n">${i.n}</div><div class="l">${i.l}</div></div>`;
-  });
-  document.getElementById('dqGrid').innerHTML = h;
-}
-
-/* page switching */
-document.querySelectorAll('.nav a').forEach(a => a.addEventListener('click', ev => {
-  ev.preventDefault();
-  document.querySelectorAll('.nav a').forEach(x => x.classList.remove('active'));
-  a.classList.add('active');
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.getElementById('page-' + a.dataset.page).classList.add('active');
-  window.scrollTo({ top:0, behavior:'smooth' });
-  observeReveal();
-}));
-
-/* cursor */
-const dot  = document.getElementById('cursor-dot');
-const ring = document.getElementById('cursor-ring');
-let mx=0,my=0,rx=0,ry=0;
-addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; dot.style.left=mx+'px'; dot.style.top=my+'px'; });
-(function loop(){ rx += (mx-rx)*.14; ry += (my-ry)*.14; ring.style.left=rx+'px'; ring.style.top=ry+'px'; requestAnimationFrame(loop); })();
-document.addEventListener('mouseover', ev => {
-  const el = ev.target.closest('a,button,.stat,.card');
-  if (el) { ring.style.transform='translate(-50%,-50%) scale(1.9)'; ring.style.borderColor='rgba(237,28,36,.7)'; }
+load().catch(err => {
+  document.body.innerHTML = '<div style="max-width:600px;margin:80px auto;text-align:center;color:#64748b"><h2>Dashboard data not found</h2><p>Run <code>python src/pipeline.py</code> to generate <code>output/dashboard_data.json</code>, then reload.</p></div>';
+  console.error(err);
 });
-document.addEventListener('mouseout', ev => {
-  if (!ev.relatedTarget || !ev.relatedTarget.closest || !ev.relatedTarget.closest('a,button,.stat,.card')) {
-    ring.style.transform='translate(-50%,-50%) scale(1)'; ring.style.borderColor='rgba(237,28,36,.45)';
-  }
-});
-
-/* reveal */
-let revObs = new IntersectionObserver(entries => {
-  entries.forEach((e,i) => {
-    if (e.isIntersecting) { setTimeout(() => e.target.classList.add('visible'), i*60); revObs.unobserve(e.target); }
-  });
-}, { threshold: 0.12 });
-function observeReveal(){ document.querySelectorAll('.page.active [data-reveal]:not(.visible)').forEach(el => revObs.observe(el)); }
-
-load();
 </script>
 </body>
 </html>

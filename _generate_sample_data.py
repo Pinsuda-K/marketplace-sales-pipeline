@@ -1,27 +1,27 @@
 """
-Mock data generator for the specialty coffee equipment reporting pipeline.
+_generate_sample_data.py — TEST FIXTURE, NOT PART OF THE PIPELINE
 
-Design goals
-------------
-1. Realistic scale — 6 months, ~2,500 order items, multi-SKU catalog, mixed channels.
-2. Deliberate messiness — the same categories of dirty-data issues real marketplace
-   exports have, seeded intentionally so the cleaning pipeline has something to catch.
-3. Reproducible — a fixed random seed so numbers don't drift between runs.
+Purpose
+-------
+Seeds the data/ folder with realistic sample marketplace exports so
+src/pipeline.py has something to work on. This script is intentionally
+prefixed with an underscore and lives under scripts/ (not src/) to make it
+obvious it is scaffolding, not core code.
 
-Issues intentionally seeded into the raw exports
-------------------------------------------------
-- Multi-item orders (one order_id, multiple line items)
-- Cancellations (order flagged, revenue should NOT count)
-- Returns with a matching negative-quantity reversal row
-- Internal QA/staff test orders (present in raw, must be excluded)
-- Duplicate row (same order_item_id appearing twice — export bug)
-- Inconsistent date formats (some ISO, some DD/MM/YYYY, some with trailing whitespace)
-- Currency stored as string with "฿" prefix and thousand-separator on some rows
-- Missing SKU on a small number of orphan rows
-- Voucher redemptions that reference an order_id that was later canceled
-- One SKU present in orders but missing from the catalog (broken join test)
+If you already have real marketplace exports in data/ shaped like the
+raw_*.csv schemas the pipeline reads, you can skip running this entirely.
 
-The pipeline in src/pipeline.py is designed to detect and handle every one of these.
+What the fixture generates
+--------------------------
+- 6 months of order line items across a specialty coffee equipment storefront
+- 3 channels (2 marketplaces + own DTC store) with different commission rates
+- ~400 unique customers, ~20 SKUs, ~600 voucher redemptions
+- Ten deliberate categories of dirty-data issues seeded in — the pipeline's
+  data-quality flags (documented in docs/data_quality_notes.md) are designed
+  to catch each one.
+
+Everything else in this file is CSV writing plumbing. The interesting file
+is src/pipeline.py.
 """
 
 import csv
