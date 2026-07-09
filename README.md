@@ -61,6 +61,17 @@ The point isn't clever translation. It's that the same reporting discipline work
 
 > Every figure above is produced by `python src/pipeline.py` from raw CSVs. Numbers refresh on every run.
 
+## Dashboards
+
+Two dashboards read the same reconciled data (`dashboard_data.json`) — every number traces back through the pipeline to the raw CSVs. They are deliberately different surfaces, not two copies of one design.
+
+![Dashboard demo](./assets/dashboard-demo-newcolors.gif)
+
+| View | Live | What it is |
+|---|---|---|
+| **Overview** (Chart.js) | [Open →](https://pinsuda-k.github.io/marketplace-sales-pipeline/) | Single-screen analyst read — KPIs, data-quality diagnostics, and the full chart grid at a glance |
+| **Editorial deep-dive** (Vora-style) | [Open →](https://pinsuda-k.github.io/marketplace-sales-pipeline/dashboard/) | Scroll-driven, sidebar-as-sections narrative that walks GMV → net revenue → contribution margin |
+
 ## Project surfaces
 
 | Surface | Link | What it is |
