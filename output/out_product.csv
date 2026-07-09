@@ -1,0 +1,21 @@
+sku,item_name,category,units,gross_gmv,net_revenue,commission,contribution_margin,margin_pct
+SKU-ESP-001,Dual-Boiler Espresso Machine,Espresso Machines,207,11920546.0,10726445.8,1194100.2,2860445.8,24.0
+SKU-ESP-003,Semi-Auto Espresso Machine,Espresso Machines,221,9283022.0,8356548.38,926473.62,2168548.38,23.4
+SKU-ESP-002,Single-Boiler Espresso Machine,Espresso Machines,218,7735482.0,6954406.68,781075.32,2158406.68,27.9
+SKU-GRD-001,Flat-Burr Grinder 64mm,Grinders,205,6116383.0,5478616.63,637766.37,1686116.63,27.6
+SKU-GRD-002,Conical-Burr Grinder,Grinders,259,5047505.0,4550905.52,496599.48,1442905.52,28.6
+SKU-GRD-003,Hand Grinder Titanium,Grinders,232,1684695.0,1530896.79,153798.21,556496.79,33.0
+SKU-KTL-001,Variable-Temp Gooseneck Kettle,Kettles,210,1344948.0,1214149.41,130798.59,416149.41,30.9
+SKU-SCL-001,Precision Coffee Scale 2kg,Scales,211,743736.0,669847.08,73888.92,226747.08,30.5
+SKU-PRT-001,Bottomless Portafilter 58mm,Accessories,220,567666.0,515574.27,52091.73,207574.27,36.6
+SKU-KTL-002,Stovetop Gooseneck Kettle,Kettles,221,490580.0,441423.65,49156.35,176223.65,35.9
+SKU-TMP-002,53mm Tamper Steel,Accessories,223,327305.0,294898.76,32406.24,134338.76,41.0
+SKU-TMP-001,58mm Tamper Steel,Accessories,214,327257.0,293138.93,34118.07,126218.93,38.6
+SKU-BAG-001,Coffee Storage Vault 1kg,Accessories,217,292423.0,264712.09,27710.91,117152.09,40.1
+SKU-DIS-001,WDT Distribution Tool,Accessories,223,204312.0,184202.25,20109.75,83852.25,41.0
+SKU-FRT-001,Milk Frothing Pitcher 600ml,Accessories,200,165685.0,148985.5,16699.5,64985.5,39.2
+SKU-FLT-002,Paper Filter V60 500ct-Pack,Consumables,251,161494.0,145366.63,16127.37,60026.63,37.2
+SKU-FRT-002,Milk Frothing Pitcher 350ml,Accessories,209,133196.0,119877.2,13318.8,52997.2,39.8
+SKU-CLN-001,Espresso Machine Cleaner 900g,Consumables,198,107622.0,96928.23,10693.77,41488.23,38.5
+SKU-CLN-002,Backflush Detergent 500g,Consumables,204,85557.0,76780.77,8776.23,31900.77,37.3
+SKU-FLT-001,Paper Filter V60 100ct,Consumables,233,39132.0,35427.87,3704.13,15622.87,39.9

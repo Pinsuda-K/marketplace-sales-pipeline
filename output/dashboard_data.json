@@ -1,0 +1,374 @@
+{
+  "kpi": {
+    "period_start": "2025-05-01",
+    "period_end": "2025-11-05",
+    "gross_gmv": 46778546.0,
+    "commission_paid": 4484910.6,
+    "net_revenue": 40551497.4,
+    "gross_profit": 16667438.0,
+    "contribution_margin": 12182527.4,
+    "margin_pct": 26.0,
+    "orders": 2753,
+    "unique_customers": 400,
+    "units_sold": 4376,
+    "aov": 16991.84
+  },
+  "monthly": [
+    {
+      "year_month": "2025-05",
+      "gross_gmv": 7085228.0,
+      "units": 686,
+      "net_revenue": 6243828.44,
+      "contribution_margin": 1920028.44,
+      "orders": 448
+    },
+    {
+      "year_month": "2025-06",
+      "gross_gmv": 8846790.0,
+      "units": 796,
+      "net_revenue": 7622129.62,
+      "contribution_margin": 2208454.62,
+      "orders": 494
+    },
+    {
+      "year_month": "2025-07",
+      "gross_gmv": 6713100.0,
+      "units": 646,
+      "net_revenue": 5668841.2,
+      "contribution_margin": 1824876.2,
+      "orders": 410
+    },
+    {
+      "year_month": "2025-08",
+      "gross_gmv": 9897121.0,
+      "units": 902,
+      "net_revenue": 8770464.79,
+      "contribution_margin": 2425624.79,
+      "orders": 574
+    },
+    {
+      "year_month": "2025-09",
+      "gross_gmv": 6481088.0,
+      "units": 611,
+      "net_revenue": 5541450.9,
+      "contribution_margin": 1777160.9,
+      "orders": 379
+    },
+    {
+      "year_month": "2025-10",
+      "gross_gmv": 7755219.0,
+      "units": 735,
+      "net_revenue": 6760268.73,
+      "contribution_margin": 2042828.73,
+      "orders": 471
+    }
+  ],
+  "product": [
+    {
+      "sku": "SKU-ESP-001",
+      "item_name": "Dual-Boiler Espresso Machine",
+      "category": "Espresso Machines",
+      "units": 207,
+      "gross_gmv": 11920546.0,
+      "net_revenue": 10726445.8,
+      "commission": 1194100.2,
+      "contribution_margin": 2860445.8,
+      "margin_pct": 24.0
+    },
+    {
+      "sku": "SKU-ESP-003",
+      "item_name": "Semi-Auto Espresso Machine",
+      "category": "Espresso Machines",
+      "units": 221,
+      "gross_gmv": 9283022.0,
+      "net_revenue": 8356548.38,
+      "commission": 926473.62,
+      "contribution_margin": 2168548.38,
+      "margin_pct": 23.4
+    },
+    {
+      "sku": "SKU-ESP-002",
+      "item_name": "Single-Boiler Espresso Machine",
+      "category": "Espresso Machines",
+      "units": 218,
+      "gross_gmv": 7735482.0,
+      "net_revenue": 6954406.68,
+      "commission": 781075.32,
+      "contribution_margin": 2158406.68,
+      "margin_pct": 27.9
+    },
+    {
+      "sku": "SKU-GRD-001",
+      "item_name": "Flat-Burr Grinder 64mm",
+      "category": "Grinders",
+      "units": 205,
+      "gross_gmv": 6116383.0,
+      "net_revenue": 5478616.63,
+      "commission": 637766.37,
+      "contribution_margin": 1686116.63,
+      "margin_pct": 27.6
+    },
+    {
+      "sku": "SKU-GRD-002",
+      "item_name": "Conical-Burr Grinder",
+      "category": "Grinders",
+      "units": 259,
+      "gross_gmv": 5047505.0,
+      "net_revenue": 4550905.52,
+      "commission": 496599.48,
+      "contribution_margin": 1442905.52,
+      "margin_pct": 28.6
+    },
+    {
+      "sku": "SKU-GRD-003",
+      "item_name": "Hand Grinder Titanium",
+      "category": "Grinders",
+      "units": 232,
+      "gross_gmv": 1684695.0,
+      "net_revenue": 1530896.79,
+      "commission": 153798.21,
+      "contribution_margin": 556496.79,
+      "margin_pct": 33.0
+    },
+    {
+      "sku": "SKU-KTL-001",
+      "item_name": "Variable-Temp Gooseneck Kettle",
+      "category": "Kettles",
+      "units": 210,
+      "gross_gmv": 1344948.0,
+      "net_revenue": 1214149.41,
+      "commission": 130798.59,
+      "contribution_margin": 416149.41,
+      "margin_pct": 30.9
+    },
+    {
+      "sku": "SKU-SCL-001",
+      "item_name": "Precision Coffee Scale 2kg",
+      "category": "Scales",
+      "units": 211,
+      "gross_gmv": 743736.0,
+      "net_revenue": 669847.08,
+      "commission": 73888.92,
+      "contribution_margin": 226747.08,
+      "margin_pct": 30.5
+    },
+    {
+      "sku": "SKU-PRT-001",
+      "item_name": "Bottomless Portafilter 58mm",
+      "category": "Accessories",
+      "units": 220,
+      "gross_gmv": 567666.0,
+      "net_revenue": 515574.27,
+      "commission": 52091.73,
+      "contribution_margin": 207574.27,
+      "margin_pct": 36.6
+    },
+    {
+      "sku": "SKU-KTL-002",
+      "item_name": "Stovetop Gooseneck Kettle",
+      "category": "Kettles",
+      "units": 221,
+      "gross_gmv": 490580.0,
+      "net_revenue": 441423.65,
+      "commission": 49156.35,
+      "contribution_margin": 176223.65,
+      "margin_pct": 35.9
+    },
+    {
+      "sku": "SKU-TMP-002",
+      "item_name": "53mm Tamper Steel",
+      "category": "Accessories",
+      "units": 223,
+      "gross_gmv": 327305.0,
+      "net_revenue": 294898.76,
+      "commission": 32406.24,
+      "contribution_margin": 134338.76,
+      "margin_pct": 41.0
+    },
+    {
+      "sku": "SKU-TMP-001",
+      "item_name": "58mm Tamper Steel",
+      "category": "Accessories",
+      "units": 214,
+      "gross_gmv": 327257.0,
+      "net_revenue": 293138.93,
+      "commission": 34118.07,
+      "contribution_margin": 126218.93,
+      "margin_pct": 38.6
+    },
+    {
+      "sku": "SKU-BAG-001",
+      "item_name": "Coffee Storage Vault 1kg",
+      "category": "Accessories",
+      "units": 217,
+      "gross_gmv": 292423.0,
+      "net_revenue": 264712.09,
+      "commission": 27710.91,
+      "contribution_margin": 117152.09,
+      "margin_pct": 40.1
+    },
+    {
+      "sku": "SKU-DIS-001",
+      "item_name": "WDT Distribution Tool",
+      "category": "Accessories",
+      "units": 223,
+      "gross_gmv": 204312.0,
+      "net_revenue": 184202.25,
+      "commission": 20109.75,
+      "contribution_margin": 83852.25,
+      "margin_pct": 41.0
+    },
+    {
+      "sku": "SKU-FRT-001",
+      "item_name": "Milk Frothing Pitcher 600ml",
+      "category": "Accessories",
+      "units": 200,
+      "gross_gmv": 165685.0,
+      "net_revenue": 148985.5,
+      "commission": 16699.5,
+      "contribution_margin": 64985.5,
+      "margin_pct": 39.2
+    },
+    {
+      "sku": "SKU-FLT-002",
+      "item_name": "Paper Filter V60 500ct-Pack",
+      "category": "Consumables",
+      "units": 251,
+      "gross_gmv": 161494.0,
+      "net_revenue": 145366.63,
+      "commission": 16127.37,
+      "contribution_margin": 60026.63,
+      "margin_pct": 37.2
+    },
+    {
+      "sku": "SKU-FRT-002",
+      "item_name": "Milk Frothing Pitcher 350ml",
+      "category": "Accessories",
+      "units": 209,
+      "gross_gmv": 133196.0,
+      "net_revenue": 119877.2,
+      "commission": 13318.8,
+      "contribution_margin": 52997.2,
+      "margin_pct": 39.8
+    },
+    {
+      "sku": "SKU-CLN-001",
+      "item_name": "Espresso Machine Cleaner 900g",
+      "category": "Consumables",
+      "units": 198,
+      "gross_gmv": 107622.0,
+      "net_revenue": 96928.23,
+      "commission": 10693.77,
+      "contribution_margin": 41488.23,
+      "margin_pct": 38.5
+    },
+    {
+      "sku": "SKU-CLN-002",
+      "item_name": "Backflush Detergent 500g",
+      "category": "Consumables",
+      "units": 204,
+      "gross_gmv": 85557.0,
+      "net_revenue": 76780.77,
+      "commission": 8776.23,
+      "contribution_margin": 31900.77,
+      "margin_pct": 37.3
+    },
+    {
+      "sku": "SKU-FLT-001",
+      "item_name": "Paper Filter V60 100ct",
+      "category": "Consumables",
+      "units": 233,
+      "gross_gmv": 39132.0,
+      "net_revenue": 35427.87,
+      "commission": 3704.13,
+      "contribution_margin": 15622.87,
+      "margin_pct": 39.9
+    }
+  ],
+  "channel": [
+    {
+      "channel_id": "CH-MP-A",
+      "channel_name": "Marketplace A",
+      "is_own_store_bool": false,
+      "gross_gmv": 18587000.0,
+      "commission": 2788050.0,
+      "net_revenue": 15798950.0,
+      "contribution_margin": 3984865.0,
+      "orders": 1129,
+      "units": 1709,
+      "margin_pct": 21.4,
+      "aov": 16463.24
+    },
+    {
+      "channel_id": "CH-MP-B",
+      "channel_name": "Marketplace B",
+      "is_own_store_bool": false,
+      "gross_gmv": 14140505.0,
+      "commission": 1696860.6,
+      "net_revenue": 12443644.4,
+      "contribution_margin": 3450544.4,
+      "orders": 879,
+      "units": 1366,
+      "margin_pct": 24.4,
+      "aov": 16087.04
+    },
+    {
+      "channel_id": "CH-OWN",
+      "channel_name": "Own-Store (DTC Web)",
+      "is_own_store_bool": true,
+      "gross_gmv": 12308903.0,
+      "commission": 0.0,
+      "net_revenue": 12308903.0,
+      "contribution_margin": 4747118.0,
+      "orders": 745,
+      "units": 1163,
+      "margin_pct": 38.6,
+      "aov": 16522.02
+    }
+  ],
+  "promotion": [
+    {
+      "label": "No Promotion",
+      "orders": 1530,
+      "gmv": 27905019.0,
+      "units": 2454,
+      "aov": 18238.57
+    },
+    {
+      "label": "Promotion",
+      "orders": 1223,
+      "gmv": 18873527.0,
+      "units": 1922,
+      "aov": 15432.16
+    }
+  ],
+  "funnel": [
+    {
+      "stage": "Visitors",
+      "count": 561283
+    },
+    {
+      "stage": "Product Views",
+      "count": 179062
+    },
+    {
+      "stage": "Add to Cart",
+      "count": 18982
+    },
+    {
+      "stage": "Orders (Paid)",
+      "count": 3733
+    }
+  ],
+  "data_quality": {
+    "raw_order_rows": 4031,
+    "duplicates_dropped": 1,
+    "unparseable_dates": 0,
+    "blank_sku_rows": 1,
+    "ghost_sku_rows": 1,
+    "excluded_rows": 6,
+    "canceled_rows": 175,
+    "reversal_rows": 123,
+    "orphan_vouchers": 27
+  }
+}

@@ -1,0 +1,4 @@
+channel_id,channel_name,commission_rate,is_own_store
+CH-MP-A,Marketplace A,0.15,FALSE
+CH-MP-B,Marketplace B,0.12,FALSE
+CH-OWN,Own-Store (DTC Web),0.0,TRUE

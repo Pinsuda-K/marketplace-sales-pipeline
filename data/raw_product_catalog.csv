@@ -1,0 +1,21 @@
+sku,item_name,category,brand,cost_price,list_price
+SKU-ESP-001,Dual-Boiler Espresso Machine,Espresso Machines,Vertex,38000,62000
+SKU-ESP-002,Single-Boiler Espresso Machine,Espresso Machines,Vertex,22000,38000
+SKU-ESP-003,Semi-Auto Espresso Machine,Espresso Machines,Kanto,28000,45000
+SKU-GRD-001,Flat-Burr Grinder 64mm,Grinders,Vertex,18500,32000
+SKU-GRD-002,Conical-Burr Grinder,Grinders,Kanto,12000,21000
+SKU-GRD-003,Hand Grinder Titanium,Grinders,Meridian,4200,7800
+SKU-KTL-001,Variable-Temp Gooseneck Kettle,Kettles,Meridian,3800,6900
+SKU-KTL-002,Stovetop Gooseneck Kettle,Kettles,Meridian,1200,2400
+SKU-SCL-001,Precision Coffee Scale 2kg,Scales,Meridian,2100,3800
+SKU-FRT-001,Milk Frothing Pitcher 600ml,Accessories,Kanto,420,890
+SKU-FRT-002,Milk Frothing Pitcher 350ml,Accessories,Kanto,320,690
+SKU-TMP-001,58mm Tamper Steel,Accessories,Vertex,780,1650
+SKU-TMP-002,53mm Tamper Steel,Accessories,Vertex,720,1590
+SKU-PRT-001,Bottomless Portafilter 58mm,Accessories,Vertex,1400,2790
+SKU-DIS-001,WDT Distribution Tool,Accessories,Meridian,450,990
+SKU-CLN-001,Espresso Machine Cleaner 900g,Consumables,Kanto,280,590
+SKU-CLN-002,Backflush Detergent 500g,Consumables,Kanto,220,450
+SKU-FLT-001,Paper Filter V60 100ct,Consumables,Meridian,85,180
+SKU-FLT-002,Paper Filter V60 500ct-Pack,Consumables,Meridian,340,690
+SKU-BAG-001,Coffee Storage Vault 1kg,Accessories,Kanto,680,1450

@@ -1,0 +1,4 @@
+channel_id,channel_name,is_own_store_bool,gross_gmv,commission,net_revenue,contribution_margin,orders,units,margin_pct,aov
+CH-MP-A,Marketplace A,False,18587000.0,2788050.0,15798950.0,3984865.0,1129,1709,21.4,16463.24
+CH-MP-B,Marketplace B,False,14140505.0,1696860.6,12443644.4,3450544.4,879,1366,24.4,16087.04
+CH-OWN,Own-Store (DTC Web),True,12308903.0,0.0,12308903.0,4747118.0,745,1163,38.6,16522.02
