@@ -351,7 +351,7 @@ async function load(){
 
 function renderAll(){
   const k = DATA.kpi;
-  const period = `${k.period.start} → ${k.period.end}  ·  Mock data`;
+  const period = `${k.period_start} → ${k.period_end}  ·  Mock data`;
   ['periodLabel','prodPeriod','funPeriod'].forEach(id => {
     const el = document.getElementById(id); if (el) el.textContent = period;
   });
