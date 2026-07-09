@@ -543,7 +543,7 @@ function renderPromoChart(){
 }
 
 function renderDq(){
-  const dq = DATA.kpi.data_quality;
+    const dq = DATA.data_quality;
   const items = [
     { n: intf(dq.raw_order_rows),        l:'Raw rows read',           hi:false },
     { n: intf(dq.duplicates_dropped),    l:'Duplicates dropped',      hi: dq.duplicates_dropped > 0 },
