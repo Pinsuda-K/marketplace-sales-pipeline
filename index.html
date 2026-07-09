@@ -24,7 +24,7 @@ header a { color: #003087; text-decoration: none; border-bottom: 1px solid #0030
 .kpi .val { font-size: 1.5rem; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; }
 .kpi .delta { font-size: 0.75rem; color: #64748b; margin-top: 6px; }
 .kpi.accent .val { color: #003087; }
-.kpi.warn .val { color: #ed1c24; }
+.kpi.warn .val { color: #ffb14e; }
 
 .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-bottom: 20px; }
 .grid.wide { grid-template-columns: 2fr 1fr; }
@@ -105,7 +105,7 @@ const bahtM = n => '฿' + ((n||0)/1000000).toFixed(2) + 'M';
 const intf  = n => (n||0).toLocaleString('en-US');
 const pct   = n => (n||0).toFixed(1) + '%';
 
-const NAVY = '#003087', NAVY2 = '#3b5bad', RED = '#ed1c24', SLATE = '#64748b', SLATE2 = '#94a3b8';
+const NAVY = '#003087', NAVY2 = '#3b5bad', RED = '#ffb14e', SLATE = '#64748b', SLATE2 = '#94a3b8';
 
 async function load() {
   let r;
