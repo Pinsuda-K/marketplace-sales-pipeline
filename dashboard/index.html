@@ -2,7 +2,7 @@
 <!--
   Marketplace Sales & GMV Reporting — "Industrial" reporting terminal.
   Aesthetic: Anton (display) + Barlow Condensed (headings) + IBM Plex Mono (data)
-  Palette:   Deep Navy #003087 + Safety Red #ED1C24 accent, off-white surface.
+  Palette:   Deep Navy #003087 + Safety Red #ffb14e accent, off-white surface.
   Structure: sidebar-as-sections + full-height scroll-reveal bands.
   Data:      dashboard_data.json (produced by src/pipeline.py — mock data only).
 -->
@@ -14,7 +14,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@300;400;500&display=swap');
 :root{
-        --bg:#f4f5f8; --surface:#ffffff; --ink:#0f172a; --navy:#0000ff; --navy2:#0000cc;
+        --bg:#f4f5f8; --surface:#ffffff; --ink:#0f172a; --navy:#003087; --navy2:#0000cc;
         --red:#ffb14e; --red2:#e8912a; --steel:#4a5573; --line:#e2e6f0; --lilac:#eef1f9;
         --muted:#7d8598; --up:#1e874d; --down:#e8912a;
   --display:'Anton',sans-serif; --cond:'Barlow Condensed',sans-serif;
@@ -402,7 +402,7 @@ function renderChannelChart(){
       datasets: [
         { label:'GMV',                 data:rows.map(r=>r.gross_gmv),                backgroundColor:'#003087' },
         { label:'Net Revenue',         data:rows.map(r=>r.net_revenue),         backgroundColor:'#4a5573' },
-        { label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ed1c24' },
+        { label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ffb14e' },
       ]
     },
     options: {
@@ -426,7 +426,7 @@ function renderMonthlyChart(){
       labels: rows.map(r => r.month),
       datasets: [
         { type:'line', label:'GMV',              data:rows.map(r=>r.gross_gmv),                 borderColor:'#003087', backgroundColor:'#003087', tension:.25, borderWidth:2.5, pointRadius:3, order:0 },
-        { type:'bar',  label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ed1c24', order:1 },
+        { type:'bar',  label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ffb14e', order:1 },
       ]
     },
     options: {
@@ -450,7 +450,7 @@ function renderProdRevChart(){
       labels: rows.map(r => r.item_name),
       datasets: [
         { label:'Net Revenue',         data:rows.map(r=>r.net_revenue),         backgroundColor:'#003087' },
-        { label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ed1c24' },
+        { label:'Contribution Margin', data:rows.map(r=>r.contribution_margin), backgroundColor:'#ffb14e' },
       ]
     },
     options: {
@@ -471,7 +471,7 @@ function renderProdMarginChart(){
     type: 'bar',
     data: {
       labels: rows.map(r => r.item_name),
-      datasets: [{ label:'Contribution Margin %', data:rows.map(r=>r.margin_pct), backgroundColor:'#ed1c24' }]
+      datasets: [{ label:'Contribution Margin %', data:rows.map(r=>r.margin_pct), backgroundColor:'#ffb14e' }]
     },
     options: {
       indexAxis:'y', responsive:true, maintainAspectRatio:false,
@@ -529,7 +529,7 @@ function renderPromoChart(){
     type:'bar',
     data:{
       labels: rows.map(r => r.label),
-      datasets: [{ label:'AOV', data:rows.map(r=>r.aov), backgroundColor:['#4a5573','#ed1c24'] }]
+      datasets: [{ label:'AOV', data:rows.map(r=>r.aov), backgroundColor:['#4a5573','#ffb14e'] }]
     },
     options:{
       responsive:true, maintainAspectRatio:false,
