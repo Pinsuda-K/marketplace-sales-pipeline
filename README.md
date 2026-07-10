@@ -132,7 +132,3 @@ marketplace-sales-pipeline/
 - Not a data science project. There are no models, no forecasts. It answers "can this be *right*?" : not "what happens next?"
 
 The intent is to demonstrate reporting discipline: layered logic, traceable numbers, explicit data quality, and cross-surface equivalence. Everything else follows from that.
-
-## Principle
-
-Every number a stakeholder sees on the dashboard should be reproducible from `raw_*.csv` files by anyone with the code : and the code should surface every assumption it made along the way.
