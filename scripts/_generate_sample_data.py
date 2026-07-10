@@ -1,26 +1,22 @@
 """
-_generate_sample_data.py — TEST FIXTURE, NOT PART OF THE PIPELINE
+_generate_sample_data.py (TEST fixture, NOT PART OF THE PIPELINE)
 
 Purpose
+Seeds to the data/ folder with sample marketplace exports so
+src/pipeline.py has mock data to work on.
 
-Seeds the data/ folder with realistic sample marketplace exports so
-src/pipeline.py has something to work on. This script is intentionally
-prefixed with an underscore and lives under scripts/ (not src/) to make it
-obvious it is scaffolding, not core code.
-
-If you already have real marketplace exports in data/ shaped like the
-raw_*.csv schemas the pipeline reads, you can skip running this entirely.
+This is so imitate a real marketplace exports. If you already have real marketplace exports in data/ shaped like the
+raw_*.csv schemas the pipeline reads, this process can be skipped.
 
 What the fixture generates
-
 - 6 months of order line items across a specialty coffee equipment storefront
 - 3 channels (2 marketplaces + own DTC store) with different commission rates
 - ~400 unique customers, ~20 SKUs, ~600 voucher redemptions
 - Ten deliberate categories of dirty-data issues seeded in — the pipeline's
   data-quality flags (documented in docs/data_quality_notes.md) are designed
-  to catch each one.
+  to catch each one
 
-Everything else in this file is CSV writing plumbing. The interesting file
+Everything else in this file is CSV writing. The interesting/transforming file
 is src/pipeline.py.
 """
 
