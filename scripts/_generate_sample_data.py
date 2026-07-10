@@ -2,7 +2,7 @@
 _generate_sample_data.py — TEST FIXTURE, NOT PART OF THE PIPELINE
 
 Purpose
--------
+
 Seeds the data/ folder with realistic sample marketplace exports so
 src/pipeline.py has something to work on. This script is intentionally
 prefixed with an underscore and lives under scripts/ (not src/) to make it
@@ -12,7 +12,7 @@ If you already have real marketplace exports in data/ shaped like the
 raw_*.csv schemas the pipeline reads, you can skip running this entirely.
 
 What the fixture generates
---------------------------
+
 - 6 months of order line items across a specialty coffee equipment storefront
 - 3 channels (2 marketplaces + own DTC store) with different commission rates
 - ~400 unique customers, ~20 SKUs, ~600 voucher redemptions
@@ -31,7 +31,7 @@ from pathlib import Path
 
 random.seed(42)
 
-# ---------- Domain: specialty coffee equipment ----------
+#  Domain: specialty coffee equipment 
 # Realistic multi-tier catalog: high-price equipment, mid-tier tools, low-price consumables.
 CATALOG = [
     # sku, name, category, brand, cost_price, list_price
@@ -207,7 +207,7 @@ def generate_orders():
                         "promo_label": "",
                     })
 
-    # --- Seed the deliberate messy issues ---
+    #  Seed the deliberate messy issues 
 
     # Duplicate row: pick a delivered row, add it again with same order_item_id
     delivered = [r for r in rows if r["status"] == "delivered"]
