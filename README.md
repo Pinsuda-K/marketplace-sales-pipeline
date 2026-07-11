@@ -67,7 +67,6 @@ Two dashboards read the same reconciled data (`dashboard_data.json`) : every num
 
 ![Dashboard demo](./assets/dashboard-demo-newcolors.gif)
 
-
 | View | Live | What it is |
 |---|---|---|
 | **Overview** (Chart.js) | [Open →](https://pinsuda-k.github.io/marketplace-sales-pipeline/) | Single-screen analyst read : KPIs, data-quality diagnostics, and the full chart grid at a glance |
